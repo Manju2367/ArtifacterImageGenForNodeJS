@@ -97,6 +97,36 @@ enka.getAllCharacters().forEach((character, c) => {
     }
 })
 
+// キャラクターコスチューム
+enka.getAllCostumes().forEach(cos => {
+    if(cos.splashImage) {
+        const charId = cos.characterId
+        const charName = enka.getCharacterById(charId).name.get()
+        const destCharName = path.join(destCharacter, charName)
+        const destCostume = path.join(destCharName, "costumes")
+        const filename = path.join(destCostume, `${ cos.name.get() }.png`)
+        const imageUrl = cos.splashImage.url
+
+        if(!existsSync(destCharName)) mkdirSync(destCharName)
+        if(!existsSync(destCostume)) mkdirSync(destCostume)
+        if(!existsSync(filename) && !URLBlackList.includes(imageUrl)) {
+            console.log(`Downloading ${ imageUrl } ...`)
+            request(imageUrl, {
+                method: "GET",
+                encoding: null
+            }, (err, res, body) => {
+                // 正常
+                if(!err && res.statusCode === 200) {
+                    writeFileSync(filename, body, "binary")
+                    dlFlag++
+                } else {
+                    console.log(`Failed request file ${ imageUrl }`)
+                }
+            })
+        }
+    }
+})
+
 // 武器
 if(!existsSync(destWeapon)) mkdirSync(destWeapon)
 
