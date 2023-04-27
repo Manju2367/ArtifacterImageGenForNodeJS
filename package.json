@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/Manju2367/ArtifacterImageGenForNodeJS/issues"
   },
-  "homepage": "https://github.com/Manju2367/ArtifacterImageGenForNodeJS#readme"
+  "homepage": "https://github.com/Manju2367/ArtifacterImageGenForNodeJS#readme",
+  "dependencies": {
+    "enka-network-api": "^2.6.1",
+    "request": "^2.88.2"
+  }
 }
