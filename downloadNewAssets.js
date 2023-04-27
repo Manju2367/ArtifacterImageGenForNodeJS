@@ -42,6 +42,7 @@ enka.getAllCharacters().forEach((character, c) => {
         let name = character.name.get()
         let element = character.element.name.get().charAt(0)
 
+        // 旅人の場合
         if(name === "旅人") {
             if(character.gender === "MALE") name = `空(${ element })`
             else if(character.gender === "FEMALE") name = `蛍(${ element })`
