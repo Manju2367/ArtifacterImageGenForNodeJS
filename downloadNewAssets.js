@@ -4,7 +4,6 @@ const path = require("path")
 const { EnkaClient } = require("enka-network-api")
 const { writeFileSync, existsSync, mkdirSync } = require("fs")
 const request = require("request")
-const { exit } = require("process")
 
 const apiBaseUrl = new URL("https://enka.network/ui")
 const enka = new EnkaClient({
@@ -41,14 +40,21 @@ if(!existsSync(destCharacter)) mkdirSync(destCharacter)
 enka.getAllCharacters().forEach((character, c) => {
     try {
         let name = character.name.get()
-        const targetUrl = {
+        let element = character.element.name.get().charAt(0)
+
+        if(name === "旅人") {
+            if(character.gender === "MALE") name = `空(${ element })`
+            else if(character.gender === "FEMALE") name = `蛍(${ element })`
+        }
+
+        let targetUrl = {
             normalAttack: character.normalAttack.icon.url,
             elementalSkill: character.elementalSkill.icon.url,
             elementalBurst: character.elementalBurst.icon.url,
             splashImage: character.splashImage.url,
             constellations: character.constellations.map(c => c.icon.url)
         }
-        const dest = path.join(destCharacter, name)
+        let dest = path.join(destCharacter, name)
 
         if(!existsSync(dest)) mkdirSync(dest)
         Object.keys(targetUrl).forEach(key => {
@@ -100,12 +106,12 @@ enka.getAllCharacters().forEach((character, c) => {
 // キャラクターコスチューム
 enka.getAllCostumes().forEach(cos => {
     if(cos.splashImage) {
-        const charId = cos.characterId
-        const charName = enka.getCharacterById(charId).name.get()
-        const destCharName = path.join(destCharacter, charName)
-        const destCostume = path.join(destCharName, "costumes")
-        const filename = path.join(destCostume, `${ cos.name.get() }.png`)
-        const imageUrl = cos.splashImage.url
+        let charId = cos.characterId
+        let charName = enka.getCharacterById(charId).name.get()
+        let destCharName = path.join(destCharacter, charName)
+        let destCostume = path.join(destCharName, "costumes")
+        let filename = path.join(destCostume, `${ cos.name.get() }.png`)
+        let imageUrl = cos.splashImage.url
 
         if(!existsSync(destCharName)) mkdirSync(destCharName)
         if(!existsSync(destCostume)) mkdirSync(destCostume)
@@ -133,7 +139,7 @@ if(!existsSync(destWeapon)) mkdirSync(destWeapon)
 enka.getAllWeapons().forEach(weapon => {
     let name = weapon.name.get()
     let imageUrl = weapon.icon.url
-    const filename = path.join(destWeapon, `${ name }.png`)
+    let filename = path.join(destWeapon, `${ name }.png`)
 
     if(!existsSync(filename) && !URLBlackList.includes(imageUrl)) {
         console.log(`Downloading ${ imageUrl } ...`)
@@ -159,8 +165,8 @@ enka.getAllArtifacts().forEach(artifact => {
     let setName = artifact.set.name.get()
     let type = artifact.equipType
     let imageUrl = artifact.icon.url
-    const dest = path.join(destArtifact, setName)
-    const filename = path.join(dest, `${ artifactTypeMap[type] }.png`)
+    let dest = path.join(destArtifact, setName)
+    let filename = path.join(dest, `${ artifactTypeMap[type] }.png`)
 
     if(!existsSync(dest)) mkdirSync(dest)
     // 画像が存在しない場合
