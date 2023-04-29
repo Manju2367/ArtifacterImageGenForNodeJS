@@ -11,7 +11,13 @@ const testPath = path.join(__dirname, "test")
 const assetsPath = path.join(__dirname, "assets")
 const fontPath = path.join(assetsPath, "ja-jp.ttf")
 const basePath = path.join(__dirname, "base")
-const charPath = path.join(__dirname, "character")
+const characterPath = path.join(__dirname, "character")
+const weaponPath = path.join(__dirname, "weapon")
+
+const baseSize = {
+    width: 1920,
+    height: 1080
+}
 
 const enka = new EnkaClient({
     defaultLanguage: "jp",
@@ -130,26 +136,32 @@ const generate = async (character, calcType) => {
     let shadow = await Jimp.read(path.join(assetsPath, "Shadow.png"))
 
     // キャラクター
-    let characterImage = (await Jimp.read(path.join(charPath, characterName, "splashImage.png")))
+    let characterPaste = new Jimp(baseSize.width, baseSize.height).rgba(true)
+    let characterImage = (await Jimp.read(path.join(characterPath, characterName, "splashImage.png")))
         .crop(289, 0, 1439, 1024)
         .scale(0.75)
-
-    let characterAvatarMask = characterImage.clone()
-    let characterAvatarMask2 = (await Jimp.read(path.join(assetsPath, "CharacterMask.png")))
+    let characterAvatarMask = (await Jimp.read(path.join(assetsPath, "CharacterMask.png")))
         .grayscale()
         .resize(characterImageSize.width, characterImageSize.height)
 
-    characterImage
-        .mask(characterAvatarMask2)
+    characterPaste.composite(characterImage.mask(characterAvatarMask), -160, -45)
 
-    let characterNameImage = await Jimp.read((await sharp(text2image(characterName, {
-        fontLocation: fontPath,
-        fontSize: 48,
-        fontColor: "#FFF"
-    })).png().toBuffer()))
+    let characterNameImage = await Jimp.read(
+        await text2image(characterName, {
+            fontLocation: fontPath,
+            fontSize: 48,
+            fontColor: "#FFF"
+        })
+    )
 
     // 武器
+    let weaponImage = (await Jimp.read(path.join(weaponPath, `${ weaponName }.png`)))
+        .resize(128, 128)
+    let weaponPaste = new Jimp(baseSize.width, baseSize.height)
 
+    weaponPaste.composite(weaponImage, 1430, 50)
+
+    
     // 天賦
 
     // 凸
@@ -158,9 +170,10 @@ const generate = async (character, calcType) => {
 
     // 合成
     base
-        .blit(characterImage, -160, -45)
-        .blit(shadow, 0, 0)
-        .blit(characterNameImage, 30, 20)
+        .composite(characterPaste, 0, 0)
+        .composite(shadow, 0, 0)
+        .composite(characterNameImage, 30, 20)
+        .composite(weaponPaste, 0, 0)
         .write(path.join(testPath, "test.png"), (err) => {
             if(err) console.log(err)
             else console.log("generated")

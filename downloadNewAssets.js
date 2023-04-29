@@ -28,6 +28,12 @@ const URLBlackList = [
     "https://enka.network/ui/UI_EquipIcon_Pole_Flagpole.png",
     "https://enka.network/ui/UI_EquipIcon_Catalyst_Amber.png",
     "https://enka.network/ui/UI_EquipIcon_Bow_Hardwood.png",
+    "https://api.ambr.top/assets/UI/UI_EquipIcon_Sword_YoutouEnchanted.png",
+    "https://api.ambr.top/assets/UI/UI_EquipIcon_Sword_YoutouShattered.png",
+    "https://api.ambr.top/assets/UI/UI_EquipIcon_Claymore_Quartz.png",
+    "https://api.ambr.top/assets/UI/UI_EquipIcon_Pole_Flagpole.png",
+    "https://api.ambr.top/assets/UI/UI_EquipIcon_Catalyst_Amber.png",
+    "https://api.ambr.top/assets/UI/UI_EquipIcon_Bow_Hardwood.png"
 ]
 
 
@@ -138,8 +144,9 @@ enka.getAllCostumes().forEach(cos => {
 if(!existsSync(destWeapon)) mkdirSync(destWeapon)
 
 enka.getAllWeapons().forEach(weapon => {
+    weapon.awakenIcon
     let name = weapon.name.get()
-    let imageUrl = weapon.icon.url
+    let imageUrl = `https://api.ambr.top/assets/UI/${ weapon.icon.url.split("/").reverse()[0] }`
     let filename = path.join(destWeapon, `${ name }.png`)
 
     if(!existsSync(filename) && !URLBlackList.includes(imageUrl)) {

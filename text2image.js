@@ -1,6 +1,7 @@
 "use strict"
 
 const TextToSVG = require("text-to-svg")
+const sharp = require("sharp")
 
 
 
@@ -13,14 +14,14 @@ const TextToSVG = require("text-to-svg")
  * @param {String} options.fontLocation 
  * @param {Number} options.fontSize 
  * @param {String} options.fontColor 
- * @returns {Buffer}
+ * @returns {Promise<Buffer>}
  */
 module.exports = (text, options={
     x: 0,
     y: 0
 }) => {
     const textToSVG = TextToSVG.loadSync(options.fontLocation)
-    return Buffer.from(textToSVG.getSVG(text, {
+    return sharp(Buffer.from(textToSVG.getSVG(text, {
         x: options.x,
         y: options.y,
         anchor: "left top",
@@ -28,5 +29,5 @@ module.exports = (text, options={
         attributes: {
             fill: options.fontColor
         }
-    }))
+    }))).png().toBuffer()
 }
