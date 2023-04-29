@@ -4,7 +4,7 @@ const path = require("path")
 const { EnkaClient, Character, Artifact } = require("enka-network-api")
 const sharp = require("sharp")
 const Jimp = require("jimp")
-const text2image = require("./text2image")
+const { text2image, roundedRect, rgba } = require("./imgUtil")
 const { exit } = require("process")
 
 const testPath = path.join(__dirname, "test")
@@ -93,20 +93,82 @@ const calcScore = (artifact, type="atk") => {
  * @param {"hp"|"atk"|"def"|"chg"|"mst"} calcType 
  */
 const generate = async (character, calcType) => {
+    // キャラクター
     const characterElement          = character.characterData.element.name.get("jp").charAt(0)
     const characterName             = ["空", "蛍"].includes(character.characterData.name.get("jp")) ?
                                       (character.characterData.gender === "MALE" ? `空(${ characterElement })` : `蛍(${ characterElement })`) :
                                       character.characterData.name.get("jp")
     const characterStatus           = character.status
+    const characterMaxHealth        = Math.round(characterStatus.maxHealth.getFormattedValue()).toLocaleString()
+    const characterBaseHealth       = Math.round(characterStatus.healthBase.getFormattedValue()).toLocaleString()
+    const characterAddHealth        = (Math.round(characterStatus.maxHealth.getFormattedValue()) - Math.round(characterStatus.healthBase.getFormattedValue())).toLocaleString()
+    const characterAttack           = Math.round(characterStatus.attack.getFormattedValue()).toLocaleString()
+    const characterBaseAttack       = Math.round(characterStatus.attackBase.getFormattedValue()).toLocaleString()
+    const characterAddAttack        = (Math.round(characterStatus.attack.getFormattedValue()) - Math.round(characterStatus.attackBase.getFormattedValue())).toLocaleString()
+    const characterDefense          = Math.round(characterStatus.defense.getFormattedValue()).toLocaleString()
+    const characterBaseDefense      = Math.round(characterStatus.defenseBase.getFormattedValue()).toLocaleString()
+    const characterAddDefense       = (Math.round(characterStatus.defense.getFormattedValue()) - Math.round(characterStatus.defenseBase.getFormattedValue())).toLocaleString()
+    const characterElementMastery   = Math.round(characterStatus.elementMastery.getFormattedValue()).toLocaleString()
+    const characterCritRate         = String(Math.round(characterStatus.critRate.getFormattedValue() * 10) / 10)
+    const characterCritDamage       = String(Math.round(characterStatus.critDamage.getFormattedValue() * 10) / 10)
+    const characterChargeEfficiency = String(Math.round(characterStatus.chargeEfficiency.getFormattedValue() * 10) / 10)
+    const characterPyroDamage       = {
+        name: characterStatus.pyroDamage.type.get("jp"),
+        value: Math.round(characterStatus.pyroDamage.getFormattedValue() * 10) / 10
+    }
+    const characterHydroDamage      = {
+        name: characterStatus.hydroDamage.type.get("jp"),
+        value: Math.round(characterStatus.hydroDamage.getFormattedValue() * 10) / 10
+    }
+    const characterCryoDamage       = {
+        name: characterStatus.cryoDamage.type.get("jp"),
+        value: Math.round(characterStatus.cryoDamage.getFormattedValue() * 10) / 10
+    }
+    const characterElectroDamage    = {
+        name: characterStatus.electroDamage.type.get("jp"),
+        value: Math.round(characterStatus.electroDamage.getFormattedValue() * 10) / 10
+    }
+    const characterDendroDamage     = {
+        name: characterStatus.dendroDamage.type.get("jp"),
+        value: Math.round(characterStatus.dendroDamage.getFormattedValue() * 10) / 10
+    }
+    const characterAnemoDamage      = {
+        name: characterStatus.anemoDamage.type.get("jp"),
+        value: Math.round(characterStatus.anemoDamage.getFormattedValue() * 10) / 10
+    }
+    const characterGeoDamage        = {
+        name: characterStatus.geoDamage.type.get("jp"),
+        value: Math.round(characterStatus.geoDamage.getFormattedValue() * 10) / 10
+    }
+    const characterPhysicalDamage   = {
+        name: characterStatus.physicalDamage.type.get("jp"),
+        value: Math.round(characterStatus.physicalDamage.getFormattedValue() * 10) / 10
+    }
+    const characterHealAdd          = {
+        name: characterStatus.healAdd.type.get("jp"),
+        value: Math.round(characterStatus.healAdd.getFormattedValue() * 10) / 10
+    }
+    const characterMaxValueStatus   = [
+        characterPyroDamage, 
+        characterHydroDamage, 
+        characterCryoDamage, 
+        characterElectroDamage, 
+        characterDendroDamage, 
+        characterAnemoDamage, 
+        characterGeoDamage, 
+        characterPhysicalDamage, 
+        characterHealAdd
+    ].reduce((a, b) => a.value > b.value ? a : b)
     const characterConstellations   = character.unlockedConstellations
     const characterLevel            = character.level
     const characterFriendship       = character.friendship
     const characterTalent           = {
-        normalAttack    : character.characterData.normalAttack,
-        elementalSkill  : character.characterData.elementalSkill,
-        elementalBurst  : character.characterData.elementalBurst
+        normalAttack    : character.skillLevels[0].level.value,
+        elementalSkill  : character.skillLevels[1].level.value,
+        elementalBurst  : character.skillLevels[2].level.value
     }
     
+    // 武器
     const weapon                    = character.weapon
     const weaponName                = weapon.weaponData.name.get("jp")
     const weaponLevel               = weapon.level
@@ -118,6 +180,7 @@ const generate = async (character, calcType) => {
                                       Math.round(weapon.weaponStats[1].value * 1000) / 10 :
                                       weapon.weaponStats[1]
 
+    // 聖遺物
     const artifacts                 = character.artifacts
     const scoreFlower               = calcScore(artifacts[0], calcType)
     const scoreWing                 = calcScore(artifacts[1], calcType)
@@ -126,11 +189,6 @@ const generate = async (character, calcType) => {
     const scoreCrown                = calcScore(artifacts[4], calcType)
 
 
-
-    const characterImageSize = {
-        width : Math.floor(1439 * 0.75),
-        height: Math.floor(1024 * 0.75)
-    }
 
     // ベース
     let base = await Jimp.read(path.join(basePath, `${ characterElement }.png`))
@@ -141,11 +199,11 @@ const generate = async (character, calcType) => {
     // キャラクター
     let characterPaste = new Jimp(baseSize.width, baseSize.height).rgba(true)
     let characterImage = (await Jimp.read(path.join(characterPath, characterName, "splashImage.png")))
-        .crop(289, 0, 1439, 1024)
+        .crop(289, 0, 1728, 1024)
         .scale(0.75)
     let characterAvatarMask = (await Jimp.read(path.join(assetsPath, "CharacterMask.png")))
         .grayscale()
-        .resize(characterImageSize.width, characterImageSize.height)
+        .resize(Math.floor((1728 - 289) * 0.75), Math.floor(1024 * 0.75))
 
     characterPaste.composite(characterImage.mask(characterAvatarMask), -160, -45)
 
@@ -207,7 +265,8 @@ const generate = async (character, calcType) => {
 
 
 
-    // テキスト
+    // 左上のテキスト等
+    let characterInfoPaste = new Jimp(baseSize.width, baseSize.height)
     let characterNameImage = await Jimp.read(
         await text2image(characterName, {
             fontLocation: fontPath,
@@ -215,18 +274,110 @@ const generate = async (character, calcType) => {
             fontColor: "#FFF"
         })
     )
+    let characterLevelImage = await Jimp.read(
+        await text2image(`Lv.${ characterLevel }`, {
+            fontLocation: fontPath,
+            fontSize: 25,
+            fontColor: "#FFF"
+        })
+    )
+    let friendshipImage = await Jimp.read(
+        await text2image(`${ characterFriendship }`, {
+            fontLocation: fontPath,
+            fontSize: 25,
+            fontColor: "#FFF"
+        })
+    )
+    let rectFriendShip = await Jimp.read(
+        await roundedRect(
+            35 + characterLevelImage.bitmap.width + 5, 
+            74, 
+            77 + characterLevelImage.bitmap.width + friendshipImage.bitmap.width, 
+            102, 
+            2
+        )
+    )
+    let friendshipIcon = (await Jimp.read(path.join(assetsPath, "Love.png")))
+    friendshipIcon.resize(friendshipIcon.bitmap.width * (24 / friendshipIcon.bitmap.height), 24)
 
+    let normalAttackLevelImage = await Jimp.read(
+        await text2image(`Lv.${ characterTalent.normalAttack }`, {
+            fontLocation: fontPath,
+            fontSize: 17,
+            fontColor: characterTalent.normalAttack >= 10 ? "#0FF" : "#FFF"
+        })
+    )
+    let elementalSkillLevelImage = await Jimp.read(
+        await text2image(`Lv.${ characterTalent.elementalSkill }`, {
+            fontLocation: fontPath,
+            fontSize: 17,
+            fontColor: characterTalent.elementalSkill >= 10 ? "#0FF" : "#FFF"
+        })
+    )
+    let elementalBurstLevelImage = await Jimp.read(
+        await text2image(`Lv.${ characterTalent.elementalBurst }`, {
+            fontLocation: fontPath,
+            fontSize: 17,
+            fontColor: characterTalent.elementalBurst >= 10 ? "#0FF" : "#FFF"
+        })
+    )
+
+    characterInfoPaste
+        .composite(characterNameImage, 30, 20)
+        .composite(characterLevelImage, 35, 75)
+        .composite(rectFriendShip, 0, 0)
+        .composite(friendshipIcon, 42 + Math.floor(characterLevelImage.bitmap.width), 76)
+        .composite(friendshipImage, 73 + characterLevelImage.bitmap.width, 74)
+        .composite(normalAttackLevelImage, 42, 397)
+        .composite(elementalSkillLevelImage, 42, 502)
+        .composite(elementalBurstLevelImage, 42, 607)
+
+
+
+    // キャラクターステータス
+    let characterStatusPaste = new Jimp(baseSize.width, baseSize.height)
+
+    // HP
+    let baseHealthImage = await Jimp.read(
+        await text2image(characterBaseHealth, {
+            fontLocation: fontPath,
+            fontSize: 12,
+            fontColor: "#FFF"
+        })
+    )
+    let addHealthImage = await Jimp.read(
+        await text2image(`+${ characterAddHealth }`, {
+            fontLocation: fontPath,
+            fontSize: 12,
+            fontColor: "#0F0"
+        })
+    )
+    let maxHealthImage = await Jimp.read(
+        await text2image(characterMaxHealth, {
+            fontLocation: fontPath,
+            fontSize: 17,
+            fontColor: "#FFF"
+        })
+    )
+
+    // 攻撃力
+
+    characterStatusPaste
+        .composite(baseHealthImage, 1360 - baseHealthImage.bitmap.width - addHealthImage.bitmap.width - 1, 97)
+        .composite(addHealthImage, 1360 - baseHealthImage.bitmap.width, 97)
+    
     // 聖遺物
 
     // 合成
     base
         .composite(characterPaste, 0, 0)
         .composite(shadow, 0, 0)
-        .composite(characterNameImage, 30, 20)
         .composite(weaponPaste, 0, 0)
         .composite(weaponRarePaste, 0, 0)
         .composite(talentBasePaste, 0, 0)
         .composite(constBasePaste, 0, 0)
+        .composite(characterInfoPaste, 0, 0)
+        .composite(characterStatusPaste, 0, 0)
         .write(path.join(testPath, "test.png"), (err) => {
             if(err) console.log(err)
             else console.log("generated")
