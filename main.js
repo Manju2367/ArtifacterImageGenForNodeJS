@@ -13,6 +13,7 @@ const fontPath = path.join(assetsPath, "ja-jp.ttf")
 const basePath = path.join(__dirname, "base")
 const characterPath = path.join(__dirname, "character")
 const weaponPath = path.join(__dirname, "weapon")
+const constellationPath = path.join(__dirname, "constellation")
 
 const baseSize = {
     width: 1920,
@@ -97,7 +98,7 @@ const generate = async (character, calcType) => {
                                       (character.characterData.gender === "MALE" ? `空(${ characterElement })` : `蛍(${ characterElement })`) :
                                       character.characterData.name.get("jp")
     const characterStatus           = character.status
-    const characterConstellations   = character.characterData.constellations
+    const characterConstellations   = character.unlockedConstellations
     const characterLevel            = character.level
     const characterFriendship       = character.friendship
     const characterTalent           = {
@@ -148,14 +149,6 @@ const generate = async (character, calcType) => {
 
     characterPaste.composite(characterImage.mask(characterAvatarMask), -160, -45)
 
-    let characterNameImage = await Jimp.read(
-        await text2image(characterName, {
-            fontLocation: fontPath,
-            fontSize: 48,
-            fontColor: "#FFF"
-        })
-    )
-
 
 
     // 武器
@@ -183,12 +176,45 @@ const generate = async (character, calcType) => {
             .resize(50, 50)
         talentPaste.composite(talent, Math.floor(talentPaste.bitmap.width/2)-25, Math.floor(talentPaste.bitmap.height/2)-25)
         
-        let talentBaseClone  = talentBase.clone()
+        let talentBaseClone = talentBase.clone()
             .composite(talentPaste, 0, 0)
         talentBasePaste.composite(talentBaseClone, 15, 330 + i*105)
     }))
 
+
+
     // 凸
+    let constBase = (await Jimp.read(path.join(constellationPath, `${ characterElement }.png`)))
+        .resize(90, 90)
+    let constLock = (await Jimp.read(path.join(constellationPath, `${ characterElement }LOCK.png`)))
+        .resize(90, 90)
+    let constBasePaste = new Jimp(baseSize.width, baseSize.height)
+
+    for(let i = 1; i < 7; i++) {
+        if(i > characterConstellations.length) {
+            constBasePaste.composite(constLock, 666, -10 + i*93)
+        } else {
+            let charConst = (await Jimp.read(path.join(characterPath, characterName, `constellations${ i }.png`)))
+                .resize(45, 45)
+            let constPaste = new Jimp(constBase.bitmap.width, constBase.bitmap.height)
+            constPaste.composite(charConst, Math.floor(constPaste.bitmap.width/2) - 25, Math.floor(constPaste.bitmap.height/2) - 23)
+        
+            let constBaseClone = constBase.clone()
+                .composite(constPaste, 0, 0)
+            constBasePaste.composite(constBaseClone, 666, -10 + i*93)
+        }
+    }
+
+
+
+    // テキスト
+    let characterNameImage = await Jimp.read(
+        await text2image(characterName, {
+            fontLocation: fontPath,
+            fontSize: 48,
+            fontColor: "#FFF"
+        })
+    )
 
     // 聖遺物
 
@@ -200,6 +226,7 @@ const generate = async (character, calcType) => {
         .composite(weaponPaste, 0, 0)
         .composite(weaponRarePaste, 0, 0)
         .composite(talentBasePaste, 0, 0)
+        .composite(constBasePaste, 0, 0)
         .write(path.join(testPath, "test.png"), (err) => {
             if(err) console.log(err)
             else console.log("generated")
