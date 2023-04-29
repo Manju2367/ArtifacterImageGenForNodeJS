@@ -135,6 +135,8 @@ const generate = async (character, calcType) => {
     let base = await Jimp.read(path.join(basePath, `${ characterElement }.png`))
     let shadow = await Jimp.read(path.join(assetsPath, "Shadow.png"))
 
+
+
     // キャラクター
     let characterPaste = new Jimp(baseSize.width, baseSize.height).rgba(true)
     let characterImage = (await Jimp.read(path.join(characterPath, characterName, "splashImage.png")))
@@ -154,6 +156,8 @@ const generate = async (character, calcType) => {
         })
     )
 
+
+
     // 武器
     let weaponImage = (await Jimp.read(path.join(weaponPath, `${ weaponName }.png`)))
         .resize(128, 128)
@@ -161,8 +165,28 @@ const generate = async (character, calcType) => {
 
     weaponPaste.composite(weaponImage, 1430, 50)
 
+    let weaponRareImage = (await Jimp.read(path.join(assetsPath, "Rarelity", `${ weaponRarelity }.png`)))
+        .scale(0.97)
+    let weaponRarePaste = new Jimp(baseSize.width, baseSize.height)
+    weaponRarePaste.composite(weaponRareImage, 1422, 173)
+
     
+
     // 天賦
+    let talentBase = (await Jimp.read(path.join(assetsPath, "TalentBack.png")))
+        .scale(2/3)
+    let talentBasePaste = new Jimp(baseSize.width, baseSize.height)
+
+    await Promise.all(Object.keys(characterTalent).map(async (t, i) => {
+        let talentPaste = new Jimp(talentBase.bitmap.width, talentBase.bitmap.height)
+        let talent = (await Jimp.read(path.join(characterPath, characterName, `${ t }.png`)))
+            .resize(50, 50)
+        talentPaste.composite(talent, Math.floor(talentPaste.bitmap.width/2)-25, Math.floor(talentPaste.bitmap.height/2)-25)
+        
+        let talentBaseClone  = talentBase.clone()
+            .composite(talentPaste, 0, 0)
+        talentBasePaste.composite(talentBaseClone, 15, 330 + i*105)
+    }))
 
     // 凸
 
@@ -174,6 +198,8 @@ const generate = async (character, calcType) => {
         .composite(shadow, 0, 0)
         .composite(characterNameImage, 30, 20)
         .composite(weaponPaste, 0, 0)
+        .composite(weaponRarePaste, 0, 0)
+        .composite(talentBasePaste, 0, 0)
         .write(path.join(testPath, "test.png"), (err) => {
             if(err) console.log(err)
             else console.log("generated")
