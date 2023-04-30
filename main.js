@@ -14,6 +14,7 @@ const basePath = path.join(__dirname, "base")
 const characterPath = path.join(__dirname, "character")
 const weaponPath = path.join(__dirname, "weapon")
 const constellationPath = path.join(__dirname, "constellation")
+const emotePath = path.join(__dirname, "emotes")
 
 const baseSize = {
     width: 1920,
@@ -109,9 +110,9 @@ const generate = async (character, calcType) => {
     const characterBaseDefense      = Math.round(characterStatus.defenseBase.getFormattedValue()).toLocaleString()
     const characterAddDefense       = (Math.round(characterStatus.defense.getFormattedValue()) - Math.round(characterStatus.defenseBase.getFormattedValue())).toLocaleString()
     const characterElementMastery   = Math.round(characterStatus.elementMastery.getFormattedValue()).toLocaleString()
-    const characterCritRate         = String(Math.round(characterStatus.critRate.getFormattedValue() * 10) / 10)
-    const characterCritDamage       = String(Math.round(characterStatus.critDamage.getFormattedValue() * 10) / 10)
-    const characterChargeEfficiency = String(Math.round(characterStatus.chargeEfficiency.getFormattedValue() * 10) / 10)
+    const characterCritRate         = characterStatus.critRate.getFormattedValue().toFixed(1)
+    const characterCritDamage       = characterStatus.critDamage.getFormattedValue().toFixed(1)
+    const characterChargeEfficiency = characterStatus.chargeEfficiency.getFormattedValue().toFixed(1)
     const characterPyroDamage       = {
         name: characterStatus.pyroDamage.type.get("jp"),
         value: Math.round(characterStatus.pyroDamage.getFormattedValue() * 10) / 10
@@ -175,10 +176,17 @@ const generate = async (character, calcType) => {
     const weaponRank                = weapon.refinementRank
     const weaponRarelity            = weapon.weaponData.stars
     const weaponBaseAtk             = weapon.weaponStats[0].value
-    const weaponSubStatusName       = weapon.weaponStats[1].type.get("jp")
-    const weaponSubStatusValue      = weapon.weaponStats[1].isPercent ?
-                                      Math.round(weapon.weaponStats[1].value * 1000) / 10 :
-                                      weapon.weaponStats[1]
+    const weaponSubStatusName       = weapon.weaponStats[1] ?
+                                      weapon.weaponStats[1].type.get("jp") :
+                                      undefined
+    const weaponSubStatusValue      = weapon.weaponStats[1] ?
+                                      weapon.weaponStats[1].isPercent ?
+                                      weapon.weaponStats[1].getFormattedValue().toFixed(1) :
+                                      weapon.weaponStats[1].getFormattedValue().toFixed() :
+                                      undefined
+    const weaponSubStatusType       = weapon.weaponStats[1] ?
+                                      weapon.weaponStats[1].type.get("jp") :
+                                      undefined
 
     // 聖遺物
     const artifacts                 = character.artifacts
@@ -214,12 +222,83 @@ const generate = async (character, calcType) => {
         .resize(128, 128)
     let weaponPaste = new Jimp(baseSize.width, baseSize.height)
 
-    weaponPaste.composite(weaponImage, 1430, 50)
+    let weaponNameImage = await Jimp.read(
+        await text2image(weaponName, {
+            fontLocation: fontPath,
+            fontSize: 26,
+            fontColor: "#FFF"
+        })
+    )
+    let weaponLevelImage = await Jimp.read(
+        await text2image(`Lv.${ weaponLevel }`, {
+            fontLocation: fontPath,
+            fontSize: 24,
+            fontColor: "#FFF"
+        })
+    )
+    let rectWeaponLevel = await Jimp.read(
+        await roundedRect(1582, 80, 1582 + weaponLevelImage.bitmap.width + 4, 108, 1)
+    )
+
+    let baseAttackIcon = (await Jimp.read(path.join(emotePath, "基礎攻撃力.png")))
+        .resize(23, 23)
+    let weaponBaseAttackImage = await Jimp.read(
+        await text2image(`基礎攻撃力  ${ weaponBaseAtk }`, {
+            fontLocation: fontPath,
+            fontSize: 23,
+            fontColor: "#FFF"
+        })
+    )
+
+    weaponPaste
+        .composite(weaponImage, 1430, 50)
+        .composite(weaponNameImage, 1582, 47)
+        .composite(rectWeaponLevel, 0, 0)
+        .composite(weaponLevelImage, 1584, 82)
+        .composite(baseAttackIcon, 1600, 120)
+        .composite(weaponBaseAttackImage, 1623, 120)
+
+    const statusNameMap = {
+        HP: {
+            short: "HP%",
+            long: "HPパーセンテージ"
+        },
+        攻撃力: {
+            short: "攻撃%",
+            long: "攻撃パーセンテージ"
+        },
+        防御力: {
+            short: "防御%",
+            long: "防御パーセンテージ"
+        },
+        元素チャージ効率: {
+            short: "元チャ効率",
+            long: "元素チャージ効率"
+        }
+    }
+    
+    if(weaponSubStatusValue) {
+        let weaponSubStatusIcon = (await Jimp.read(path.join(emotePath, `${ ["HP", "攻撃力", "防御力"].includes(weaponSubStatusType) ? statusNameMap[weaponSubStatusType].long : weaponSubStatusType }.png`)))
+            .resize(23, 23)
+        let weaponSubStatusImage = await Jimp.read(
+            await text2image(`${ Object.keys(statusNameMap).includes(weaponSubStatusName) ? statusNameMap[weaponSubStatusName].short : weaponSubStatusName }  ${ weaponSubStatusValue }${ weapon.weaponStats[1].isPercent ? "%" : "" }`, {
+                fontLocation: fontPath,
+                fontSize: 23,
+                fontColor: "#FFF"
+            })
+        )
+
+        weaponPaste
+            .composite(weaponSubStatusIcon, 1600, 155)
+            .composite(weaponSubStatusImage, 1623, 155)
+    }
 
     let weaponRareImage = (await Jimp.read(path.join(assetsPath, "Rarelity", `${ weaponRarelity }.png`)))
         .scale(0.97)
     let weaponRarePaste = new Jimp(baseSize.width, baseSize.height)
-    weaponRarePaste.composite(weaponRareImage, 1422, 173)
+    
+    weaponRarePaste
+        .composite(weaponRareImage, 1422, 173)
 
     
 
@@ -355,17 +434,135 @@ const generate = async (character, calcType) => {
     let maxHealthImage = await Jimp.read(
         await text2image(characterMaxHealth, {
             fontLocation: fontPath,
-            fontSize: 17,
+            fontSize: 26,
             fontColor: "#FFF"
         })
     )
 
     // 攻撃力
+    let baseAttackImage = await Jimp.read(
+        await text2image(characterBaseAttack, {
+            fontLocation: fontPath,
+            fontSize: 12,
+            fontColor: "#FFF"
+        })
+    )
+    let addAttackImage = await Jimp.read(
+        await text2image(`+${ characterAddAttack }`, {
+            fontLocation: fontPath,
+            fontSize: 12,
+            fontColor: "#0F0"
+        })
+    )
+    let attackImage = await Jimp.read(
+        await text2image(characterAttack, {
+            fontLocation: fontPath,
+            fontSize: 26,
+            fontColor: "#FFF"
+        })
+    )
+
+    // 防御力
+    let baseDefenseImage = await Jimp.read(
+        await text2image(characterBaseDefense, {
+            fontLocation: fontPath,
+            fontSize: 12,
+            fontColor: "#FFF"
+        })
+    )
+    let addDefenseImage = await Jimp.read(
+        await text2image(`+${ characterAddDefense }`, {
+            fontLocation: fontPath,
+            fontSize: 12,
+            fontColor: "#0F0"
+        })
+    )
+    let defenseImage = await Jimp.read(
+        await text2image(characterDefense, {
+            fontLocation: fontPath,
+            fontSize: 26,
+            fontColor: "#FFF"
+        })
+    )
+
+    // 元素熟知
+    let elementMasteryImage = await Jimp.read(
+        await text2image(characterElementMastery, {
+            fontLocation: fontPath,
+            fontSize: 26,
+            fontColor: "#FFF"
+        })
+    )
+
+    // 会心率
+    let critRateImage = await Jimp.read(
+        await text2image(`${ characterCritRate }%`, {
+            fontLocation: fontPath,
+            fontSize: 26,
+            fontColor: "#FFF"
+        })
+    )
+
+    // 会心ダメージ
+    let critDamageImage = await Jimp.read(
+        await text2image(`${ characterCritDamage }%`, {
+            fontLocation: fontPath,
+            fontSize: 26,
+            fontColor: "#FFF"
+        })
+    )
+
+    // 元素チャージ効率
+    let chargeEfficiencyImage = await Jimp.read(
+        await text2image(`${ characterChargeEfficiency }%`, {
+            fontLocation: fontPath,
+            fontSize: 26,
+            fontColor: "#FFF"
+        })
+    )
 
     characterStatusPaste
-        .composite(baseHealthImage, 1360 - baseHealthImage.bitmap.width - addHealthImage.bitmap.width - 1, 97)
-        .composite(addHealthImage, 1360 - baseHealthImage.bitmap.width, 97)
-    
+        .composite(baseHealthImage, 1360 - baseHealthImage.bitmap.width - addHealthImage.bitmap.width - 1, 97 + 70*0)
+        .composite(addHealthImage, 1360 - addHealthImage.bitmap.width, 97 + 70*0)
+        .composite(maxHealthImage, 1360 - maxHealthImage.bitmap.width, 67 + 70*0)
+        .composite(baseAttackImage, 1360 - baseAttackImage.bitmap.width - addAttackImage.bitmap.width - 1, 97 + 70*1)
+        .composite(addAttackImage, 1360 - addAttackImage.bitmap.width, 97 + 70*1)
+        .composite(attackImage, 1360 - attackImage.bitmap.width, 67 + 70*1)
+        .composite(baseDefenseImage, 1360 - baseDefenseImage.bitmap.width - addDefenseImage.bitmap.width - 1, 97 + 70*2)
+        .composite(addDefenseImage, 1360 - addDefenseImage.bitmap.width, 97 + 70*2)
+        .composite(defenseImage, 1360 - defenseImage.bitmap.width, 67 + 70*2)
+        .composite(elementMasteryImage, 1360 - elementMasteryImage.bitmap.width, 67 + 70*3)
+        .composite(critRateImage, 1360 - critRateImage.bitmap.width, 67 + 70*4)
+        .composite(critDamageImage, 1360 - critDamageImage.bitmap.width, 67 + 70*5)
+        .composite(chargeEfficiencyImage, 1360 - chargeEfficiencyImage.bitmap.width, 67 + 70*6)
+
+    // 元素ダメージ, 治療効果
+    if(characterMaxValueStatus.value > 0) {
+        let maxValueStatusIcon = (await Jimp.read(path.join(emotePath, `${ characterMaxValueStatus.name }.png`)))
+            .resize(40, 40)
+
+        let maxValueStatusNameImage = await Jimp.read(
+            await text2image(characterMaxValueStatus.name, {
+                fontLocation: fontPath,
+                fontSize: 27,
+                fontColor: "#FFF"
+            })
+        )
+
+        let maxValueStatusImage = await Jimp.read(
+            await text2image(`${ characterMaxValueStatus.value.toFixed(1) }%`, {
+                fontLocation: fontPath,
+                fontSize: 26,
+                fontColor: "#FFF"
+            })
+        )
+
+        characterStatusPaste
+            .composite(maxValueStatusIcon, 787, 62 + 70*7)
+            .composite(maxValueStatusNameImage, 845, 67 + 70*7)
+            .composite(maxValueStatusImage, 1360 - maxValueStatusImage.bitmap.width, 67 + 70*7)
+    }
+
     // 聖遺物
 
     // 合成
@@ -379,8 +576,12 @@ const generate = async (character, calcType) => {
         .composite(characterInfoPaste, 0, 0)
         .composite(characterStatusPaste, 0, 0)
         .write(path.join(testPath, "test.png"), (err) => {
-            if(err) console.log(err)
-            else console.log("generated")
+            if(err) {
+                console.log(err)
+            } else {
+                console.log("generated")
+                exit(1)
+            }
         })
 }
 
