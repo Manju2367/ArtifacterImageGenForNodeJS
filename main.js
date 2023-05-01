@@ -207,7 +207,7 @@ const generate = async (character, calcType) => {
     // キャラクター
     let characterPaste = new Jimp(baseSize.width, baseSize.height).rgba(true)
     let characterImage = (await Jimp.read(path.join(characterPath, characterName, "splashImage.png")))
-        .crop(289, 0, 1728, 1024)
+        .crop(289, 0, 1728 - 289, 1024)
         .scale(0.75)
     let characterAvatarMask = (await Jimp.read(path.join(assetsPath, "CharacterMask.png")))
         .grayscale()
@@ -237,7 +237,7 @@ const generate = async (character, calcType) => {
         })
     )
     let rectWeaponLevel = await Jimp.read(
-        await roundedRect(1582, 80, 1582 + weaponLevelImage.bitmap.width + 4, 108, 1)
+        await roundedRect(0, 0, weaponLevelImage.bitmap.width + 4, 28, 1)
     )
 
     let baseAttackIcon = (await Jimp.read(path.join(emotePath, "基礎攻撃力.png")))
@@ -250,13 +250,26 @@ const generate = async (character, calcType) => {
         })
     )
 
+    let rectWeaponRank = await Jimp.read(
+        await roundedRect(0, 0, 40, 25, 1)
+    )
+    let weaponRankImage = await Jimp.read(
+        await text2image(`R${ weaponRank }`, {
+            fontLocation: fontPath,
+            fontSize: 24,
+            fontColor: "#FFF"
+        })
+    )
+
     weaponPaste
         .composite(weaponImage, 1430, 50)
         .composite(weaponNameImage, 1582, 47)
-        .composite(rectWeaponLevel, 0, 0)
+        .composite(rectWeaponLevel, 1582, 80)
         .composite(weaponLevelImage, 1584, 82)
         .composite(baseAttackIcon, 1600, 120)
         .composite(weaponBaseAttackImage, 1623, 120)
+        .composite(rectWeaponRank, 1430, 45)
+        .composite(weaponRankImage, 1433, 46)
 
     const statusNameMap = {
         HP: {
