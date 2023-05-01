@@ -15,6 +15,8 @@ const characterPath = path.join(__dirname, "character")
 const weaponPath = path.join(__dirname, "weapon")
 const constellationPath = path.join(__dirname, "constellation")
 const emotePath = path.join(__dirname, "emotes")
+const artifactGradePath = path.join(__dirname, "artifactGrades")
+const artifactPath = path.join(__dirname, "artifact")
 
 const baseSize = {
     width: 1920,
@@ -46,6 +48,41 @@ const fightProp = {
     FIGHT_PROP_ICE_ADD_HURT     : "氷元素ダメージ",
     FIGHT_PROP_ROCK_ADD_HURT    : "岩元素ダメージ",
     FIGHT_PROP_PHYSICAL_ADD_HURT: "物理ダメージ"
+}
+
+const convAsMap = {
+    hp: "HP",
+    atk: "攻撃力",
+    def: "防御力",
+    chg: "元素チャージ効率",
+    mst: "元素熟知"
+}
+
+const statusNameMap = {
+    HP: {
+        short: "HP%",
+        long: "HPパーセンテージ"
+    },
+    攻撃力: {
+        short: "攻撃%",
+        long: "攻撃パーセンテージ"
+    },
+    防御力: {
+        short: "防御%",
+        long: "防御パーセンテージ"
+    },
+    元素チャージ効率: {
+        short: "元チャ効率",
+        long: "元素チャージ効率"
+    }
+}
+
+const artifactTypeMap = {
+    EQUIP_BRACER    : "flower",
+    EQUIP_DRESS     : "crown",
+    EQUIP_NECKLACE  : "wing",
+    EQUIP_RING      : "cup",
+    EQUIP_SHOES     : "clock"
 }
 
 
@@ -93,10 +130,10 @@ const calcScore = (artifact, type="atk") => {
  * @param {Character} character 
  * @param {"hp"|"atk"|"def"|"chg"|"mst"} calcType 
  */
-const generate = async (character, calcType) => {
+const generate = async (character, calcType="atk") => {
     // キャラクター
     const characterElement          = character.characterData.element.name.get("jp").charAt(0)
-    const characterName             = ["空", "蛍"].includes(character.characterData.name.get("jp")) ?
+    const characterName             = character.characterData.name.get("jp") === "旅人" ?
                                       (character.characterData.gender === "MALE" ? `空(${ characterElement })` : `蛍(${ characterElement })`) :
                                       character.characterData.name.get("jp")
     const characterStatus           = character.status
@@ -195,6 +232,7 @@ const generate = async (character, calcType) => {
     const scoreClock                = calcScore(artifacts[2], calcType)
     const scoreCup                  = calcScore(artifacts[3], calcType)
     const scoreCrown                = calcScore(artifacts[4], calcType)
+    const scoreTotal                = scoreFlower + scoreWing + scoreClock + scoreCup + scoreCrown
 
 
 
@@ -270,25 +308,6 @@ const generate = async (character, calcType) => {
         .composite(weaponBaseAttackImage, 1623, 120)
         .composite(rectWeaponRank, 1430, 45)
         .composite(weaponRankImage, 1433, 46)
-
-    const statusNameMap = {
-        HP: {
-            short: "HP%",
-            long: "HPパーセンテージ"
-        },
-        攻撃力: {
-            short: "攻撃%",
-            long: "攻撃パーセンテージ"
-        },
-        防御力: {
-            short: "防御%",
-            long: "防御パーセンテージ"
-        },
-        元素チャージ効率: {
-            short: "元チャ効率",
-            long: "元素チャージ効率"
-        }
-    }
     
     if(weaponSubStatusValue) {
         let weaponSubStatusIcon = (await Jimp.read(path.join(emotePath, `${ ["HP", "攻撃力", "防御力"].includes(weaponSubStatusType) ? statusNameMap[weaponSubStatusType].long : weaponSubStatusType }.png`)))
@@ -576,7 +595,104 @@ const generate = async (character, calcType) => {
             .composite(maxValueStatusImage, 1360 - maxValueStatusImage.bitmap.width, 67 + 70*7)
     }
 
+
+
+    // 合計スコア
+    let artifactScorePaste = new Jimp(baseSize.width, baseSize.height)
+
+    let scoreTotalImage = await Jimp.read(
+        await text2image(scoreTotal.toFixed(1), {
+            fontLocation: fontPath,
+            fontSize: 75,
+            fontColor: "#FFF"
+        })
+    )
+    let convAsImage = await Jimp.read(
+        await text2image(`${ convAsMap[calcType] }換算`, {
+            fontLocation: fontPath,
+            fontSize: 24,
+            fontColor: "#FFF"
+        })
+    )
+
+    let scoreBadge
+    if(scoreTotal >= 220) {
+        scoreBadge = await Jimp.read(path.join(artifactGradePath, "SS.png"))
+    } else if(scoreTotal >= 200) {
+        scoreBadge = await Jimp.read(path.join(artifactGradePath, "S.png"))
+    } else if(scoreTotal >= 180) {
+        scoreBadge = await Jimp.read(path.join(artifactGradePath, "A.png"))
+    } else {
+        scoreBadge = await Jimp.read(path.join(artifactGradePath, "B.png"))
+    }
+    scoreBadge.scale(0.125)
+
+    artifactScorePaste
+        .composite(scoreTotalImage, 1652 - Math.floor(scoreTotalImage.bitmap.width / 2), 420)
+        .composite(convAsImage, 1867 - convAsImage.bitmap.width, 585)
+        .composite(scoreBadge, 1806, 345)
+
+
+
     // 聖遺物
+    let artifactPreviewPaste = new Jimp(baseSize.width, baseSize.height)
+    let artifactStatusPaste = new Jimp(baseSize.width, baseSize.height)
+    await Promise.all(artifacts.map(async (artifact, i) => {
+        let artifactMask = (await Jimp.read(path.join(assetsPath, "ArtifactMask.png")))
+            .grayscale()
+            .resize(332, 332)
+        let artifactImage = (await Jimp.read(path.join(artifactPath, artifact.artifactData.set.name.get("jp"), `${ artifactTypeMap[artifact.artifactData.equipType] }.png`)))   
+            .resize(332, 332)
+            .brightness(-0.4)
+            .mask(artifactMask)
+
+        if(["flower", "crown"].includes(artifactTypeMap[artifact.artifactData.equipType])) {
+            artifactPreviewPaste
+                .composite(artifactImage, -37 + 373*i, 570)
+        } else if(["wing", "cup"].includes(artifactTypeMap[artifact.artifactData.equipType])) {
+            artifactPreviewPaste
+                .composite(artifactImage, -36 + 373*i, 570)
+        } else {
+            artifactPreviewPaste
+                .composite(artifactImage, -35 + 373*i, 570)   
+        }
+
+        // メインOP
+        let mainStatus = artifact.mainstat
+        let mainOpName = mainStatus.type.get("jp")
+        let mainOpValue = mainStatus.isPercent ? 
+                          mainStatus.getFormattedValue().toLocaleString(undefined, { maximumFractionDigits: 1 }) :
+                          mainStatus.getFormattedValue().toLocaleString()
+
+        let mainOpIcon = (await Jimp.read(path.join(emotePath, `${ Object.keys(statusNameMap).includes(mainOpName) && mainStatus.isPercent ? statusNameMap[mainOpName].long : mainOpName }.png`)))
+            .resize(35, 35)
+        let mainOpNameImage = await Jimp.read(
+            await text2image(Object.keys(statusNameMap).includes(mainOpName) && mainStatus.isPercent ? statusNameMap[mainOpName].short : mainOpName, {
+                fontLocation: fontPath,
+                fontSize: 29,
+                fontColor: "#FFF"
+            }) 
+        )
+        let mainOpValueImage = await Jimp.read(
+            await text2image(`${ mainOpValue }${ mainStatus.isPercent ? "%" : "" }` ,{
+                fontLocation: fontPath,
+                fontSize: 49,
+                fontColor: "#FFF"
+            })
+        )
+
+        artifactStatusPaste
+            .composite(mainOpIcon, 340 + i*373 - mainOpNameImage.bitmap.width, 655)
+            .composite(mainOpNameImage, 375 + i*373 - mainOpNameImage.bitmap.width, 655)
+            .composite(mainOpValueImage, 375 + i*373 - mainOpValueImage.bitmap.width, 690)
+
+        // サブOP
+        // artifact.substats.total.forEach(subStatus => {
+
+        // })
+    }))
+
+
 
     // 合成
     base
@@ -588,6 +704,9 @@ const generate = async (character, calcType) => {
         .composite(constBasePaste, 0, 0)
         .composite(characterInfoPaste, 0, 0)
         .composite(characterStatusPaste, 0, 0)
+        .composite(artifactScorePaste, 0, 0)
+        .composite(artifactPreviewPaste, 0, 0)
+        .composite(artifactStatusPaste, 0, 0)
         .write(path.join(testPath, "test.png"), (err) => {
             if(err) {
                 console.log(err)
@@ -599,5 +718,5 @@ const generate = async (character, calcType) => {
 }
 
 enka.fetchUser("800282666").then(result => {
-    generate(result.characters[0])
+    generate(result.characters[6])
 })

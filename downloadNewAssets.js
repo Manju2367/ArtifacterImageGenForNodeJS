@@ -40,13 +40,23 @@ const URLBlackList = [
 
 let dlFlag = 0
 
-// キャラクター
 if(!existsSync(destCharacter)) mkdirSync(destCharacter)
+if(!existsSync(destWeapon)) mkdirSync(destWeapon)
+if(!existsSync(destArtifact)) mkdirSync(destArtifact)
 
+// キャラクター
 enka.getAllCharacters().forEach((character, c) => {
     try {
         let name = character.name.get()
         let element = character.element.name.get().charAt(0)
+
+        let targetUrl = {
+            normalAttack: character.normalAttack.icon.url,
+            elementalSkill: character.elementalSkill.icon.url,
+            elementalBurst: character.elementalBurst.icon.url,
+            splashImage: name === "旅人" ? `https://api.ambr.top/assets/UI/${ character.splashImage.url.split("/").reverse()[0] }` : character.splashImage.url,
+            constellations: character.constellations.map(c => c.icon.url)
+        }
 
         // 旅人の場合
         if(name === "旅人") {
@@ -54,13 +64,6 @@ enka.getAllCharacters().forEach((character, c) => {
             else if(character.gender === "FEMALE") name = `蛍(${ element })`
         }
 
-        let targetUrl = {
-            normalAttack: character.normalAttack.icon.url,
-            elementalSkill: character.elementalSkill.icon.url,
-            elementalBurst: character.elementalBurst.icon.url,
-            splashImage: character.splashImage.url,
-            constellations: character.constellations.map(c => c.icon.url)
-        }
         let dest = path.join(destCharacter, name)
 
         if(!existsSync(dest)) mkdirSync(dest)
@@ -96,6 +99,7 @@ enka.getAllCharacters().forEach((character, c) => {
                         }, (err, res, body) => {
                             // 正常
                             if(!err && res.statusCode === 200) {
+                                console.log(name)
                                 writeFileSync(filename, body, "binary")
                                 dlFlag++
                             } else {
@@ -141,8 +145,6 @@ enka.getAllCostumes().forEach(cos => {
 })
 
 // 武器
-if(!existsSync(destWeapon)) mkdirSync(destWeapon)
-
 enka.getAllWeapons().forEach(weapon => {
     weapon.awakenIcon
     let name = weapon.name.get()
@@ -167,8 +169,6 @@ enka.getAllWeapons().forEach(weapon => {
 })
 
 // 聖遺物
-if(!existsSync(destArtifact)) mkdirSync(destArtifact)
-
 enka.getAllArtifacts().forEach(artifact => {
     let setName = artifact.set.name.get()
     let type = artifact.equipType
@@ -197,8 +197,9 @@ enka.getAllArtifacts().forEach(artifact => {
 
 
 
-if(dlFlag > 0) {
-    console.log(`Downloaded ${ dlFlag } data.`)
-} else {
-    console.log("Not found new image data.")
-}
+// request-promiseモジュールで実装したい
+// if(dlFlag > 0) {
+//     console.log(`Downloaded ${ dlFlag } data.`)
+// } else {
+//     console.log("Not found new image data.")
+// }
