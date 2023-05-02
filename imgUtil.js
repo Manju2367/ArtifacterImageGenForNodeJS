@@ -78,6 +78,63 @@ const roundedRect = (x, y, w, h, r, options={
 
 
 
+/**
+ * maskImageを使用してimageにマスク処理をします。
+ * @param {import("sharp").Sharp} image 
+ * @param {import("sharp").Sharp} maskImage 
+ * @param {Object} [options] 
+ * @param {Number} [options.x]
+ * @param {Number} [options.y]
+ * @returns {Promise<import("sharp").Sharp>}
+ */
+const mask = (image, maskImage, options={
+    x: 0,
+    y: 0
+}) => {
+    return new Promise((resolve, reject) => {
+        image.raw().toBuffer(async (err, data, info) => {
+            if(!err) {
+                let maskBuffer = await maskImage.toBuffer()
+                let paste = await sharp({
+                    create: {
+                        channels: 4,
+                        background: {
+                            r: 0xFF,
+                            g: 0xFF,
+                            b: 0xFF,
+                            alpha: 1
+                        },
+                        width: info.width,
+                        height: info.height
+                    }
+                }).composite([{
+                    input: maskBuffer,
+                    left: options.x,
+                    top: options.y
+                }]).grayscale().raw().toBuffer()
+            
+                data.forEach((d, i) => {
+                    if(i % 4 === 3) {
+                        data[i] *= paste[(i + 1)/4] / 0xFF
+                    }
+                })
+
+                resolve(sharp(data, {
+                    raw: {
+                        width: info.width,
+                        height: info.height,
+                        channels: 4
+                    }
+                }).png())
+            } else {
+                reject(err)
+            }
+        })
+    })
+}
+
+
+
 const toHex = d => {
     let e = "0" + d.toString(16).toUpperCase()
     return e.substring(e.length - 2)
@@ -120,6 +177,7 @@ const rgba = (r, g, b, a) => {
 module.exports = {
     text2image,
     roundedRect,
+    mask,
     rgb,
     rgba
 }

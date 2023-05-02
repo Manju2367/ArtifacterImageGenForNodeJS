@@ -198,6 +198,7 @@ enka.getAllArtifacts().forEach(artifact => {
 
 
 // request-promiseモジュールで実装したい
+// あと旅人のsplashimage がなんかデカい
 // if(dlFlag > 0) {
 //     console.log(`Downloaded ${ dlFlag } data.`)
 // } else {

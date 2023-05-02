@@ -4,7 +4,7 @@ const path = require("path")
 const { EnkaClient, Character, Artifact } = require("enka-network-api")
 const sharp = require("sharp")
 const Jimp = require("jimp")
-const { text2image, roundedRect, rgba } = require("./imgUtil")
+const { text2image, roundedRect, mask } = require("./imgUtil")
 const { exit } = require("process")
 
 const testPath = path.join(__dirname, "test")
