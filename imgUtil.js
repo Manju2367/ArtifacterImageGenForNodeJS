@@ -14,7 +14,7 @@ const sharp = require("sharp")
  * @param {String} options.fontLocation 
  * @param {Number} options.fontSize 
  * @param {String} options.fontColor 
- * @returns {Promise<Buffer>}
+ * @returns {import("sharp").Sharp}
  */
 const text2image = (text, options={
     x: 0,
@@ -29,7 +29,7 @@ const text2image = (text, options={
         attributes: {
             fill: options.fontColor
         }
-    }))).png().toBuffer()
+    }))).png()
 }
 
 
@@ -47,7 +47,7 @@ const text2image = (text, options={
  * @param {Boolean} [options.bl] bottom-left corner should be rounded?
  * @param {Boolean} [options.br] bottom-right corner should be rounded?
  * @param {String} [options.fill] fill color
- * @returns {Promise<Buffer>}
+ * @returns {import("sharp").Sharp}
  */
 const roundedRect = (x, y, w, h, r, options={
     tl: true,
@@ -73,7 +73,7 @@ const roundedRect = (x, y, w, h, r, options={
     d += "z"
     let svg = `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${ w } ${ h }" width="${ w }" height="${ h }"><path d="${ d }" fill="${ options.fill }" /></svg>`
     
-    return sharp(Buffer.from(svg)).png().toBuffer()
+    return sharp(Buffer.from(svg)).png()
 }
 
 
@@ -135,6 +135,54 @@ const mask = (image, maskImage, options={
 
 
 
+/**
+ * 
+ * @param {Number} width 
+ * @param {Number} height 
+ * @param {Object} [options] 
+ * @param {Object} [options.background] 
+ * @param {Number} [options.background.r] 0-255
+ * @param {Number} [options.background.g] 0-255
+ * @param {Number} [options.background.b] 0-255
+ * @param {Number} [options.background.alpha] 0.0-1.0
+ * @returns 
+ */
+const createImage = (width, height, options={
+    background: {
+        r: 0xFF,
+        g: 0xFF,
+        b: 0xFF,
+        alpha: 0.0
+    }
+}) => {
+    return sharp({
+        create: {
+            background: options.background,
+            channels: 4,
+            width: width,
+            height: height
+        }
+    }).png()
+}
+
+
+
+/**
+ * 
+ * @param {import("sharp").Sharp} image1 
+ * @param {import("sharp").Sharp} image2 
+ * @returns {Promise<import("sharp").Sharp>}
+ */
+const composite = async (image1, image2, x, y) => {
+    return sharp(await sharp(await image1.toBuffer()).composite([{
+        input: await image2.toBuffer(),
+        left: x,
+        top: y
+    }]).toBuffer()).png()
+}
+
+
+
 const toHex = d => {
     let e = "0" + d.toString(16).toUpperCase()
     return e.substring(e.length - 2)
@@ -178,6 +226,8 @@ module.exports = {
     text2image,
     roundedRect,
     mask,
+    createImage,
+    composite,
     rgb,
     rgba
 }
