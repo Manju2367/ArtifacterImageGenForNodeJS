@@ -170,15 +170,19 @@ const createImage = (width, height, options={
 /**
  * 
  * @param {import("sharp").Sharp} image1 
- * @param {import("sharp").Sharp} image2 
+ * @param {import("sharp").Sharp|Array<{input: String|Buffer|{create: sharp.Create}|{text: sharp.CreateText;}, left: Number, top: Number}>} image2 
  * @returns {Promise<import("sharp").Sharp>}
  */
-const composite = async (image1, image2, x, y) => {
-    return sharp(await sharp(await image1.toBuffer()).composite([{
-        input: await image2.toBuffer(),
-        left: x,
-        top: y
-    }]).toBuffer()).png()
+const composite = async (image1, image2, x=0, y=0) => {
+    if(image2 instanceof Array) {
+        return sharp(await sharp(await image1.toBuffer()).composite(image2).toBuffer()).png()
+    } else {
+        return sharp(await sharp(await image1.toBuffer()).composite([{
+            input: await image2.toBuffer(),
+            left: x,
+            top: y
+        }]).toBuffer()).png()
+    }
 }
 
 

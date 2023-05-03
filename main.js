@@ -3,20 +3,19 @@
 const path = require("path")
 const { EnkaClient, Character, Artifact } = require("enka-network-api")
 const sharp = require("sharp")
-const Jimp = require("jimp")
 const { text2image, roundedRect, mask, createImage, composite } = require("./imgUtil")
 const { exit } = require("process")
 
-const testPath = path.join(__dirname, "test")
-const assetsPath = path.join(__dirname, "assets")
-const fontPath = path.join(assetsPath, "ja-jp.ttf")
-const basePath = path.join(__dirname, "base")
-const characterPath = path.join(__dirname, "character")
-const weaponPath = path.join(__dirname, "weapon")
+const testPath          = path.join(__dirname, "test")
+const assetsPath        = path.join(__dirname, "assets")
+const fontPath          = path.join(assetsPath, "ja-jp.ttf")
+const basePath          = path.join(__dirname, "base")
+const characterPath     = path.join(__dirname, "character")
+const weaponPath        = path.join(__dirname, "weapon")
 const constellationPath = path.join(__dirname, "constellation")
-const emotePath = path.join(__dirname, "emotes")
+const emotePath         = path.join(__dirname, "emotes")
 const artifactGradePath = path.join(__dirname, "artifactGrades")
-const artifactPath = path.join(__dirname, "artifact")
+const artifactPath      = path.join(__dirname, "artifact")
 
 const baseSize = {
     width: 1920,
@@ -85,6 +84,39 @@ const artifactTypeMap = {
     EQUIP_SHOES     : "clock"
 }
 
+const scoreRank = {
+    total: {
+        SS: 220,
+        S: 200,
+        A: 180
+    },
+    EQUIP_BRACER: {
+        SS: 50,
+        S: 45,
+        A: 40
+    },
+    EQUIP_NECKLACE: {
+        SS: 50,
+        S: 45,
+        A: 40
+    },
+    EQUIP_SHOES: {
+        SS: 45,
+        S: 40,
+        A: 35
+    },
+    EQUIP_RING: {
+        SS: 45,
+        S: 40,
+        A: 37
+    },
+    EQUIP_DRESS: {
+        SS: 40,
+        S: 35,
+        A: 30
+    }
+}
+
 
 
 /**
@@ -123,6 +155,20 @@ const calcScore = (artifact, type="atk") => {
     })
 
     return Math.round(score * 10) / 10
+}
+
+/**
+ * コンマで3桁区切りの数字に変換
+ * @param {Number} num 
+ * @param {Number} round 四捨五入する桁
+ * @returns {String} 
+ */
+const commaSplittedNumber = (num, round=-1) => {
+    let str = round >= 0 ? (Math.round(num * 10**round) / 10**round).toLocaleString() : num.toLocaleString()
+    let strS = str.split(".")[1]
+    if(round > 0) 
+        str = `${ str }${ strS === undefined ? "." : "" }${ strS === undefined ? Array(round + 1).join("0") : Array(round - strS.length + 1).join("0") }`
+    return str
 }
 
 /**
@@ -593,11 +639,11 @@ const generate = async (character, calcType="atk") => {
     })
 
     let scoreBadge
-    if(scoreTotal >= 220) {
+    if(scoreTotal >= scoreRank.total.SS) {
         scoreBadge = sharp(path.join(artifactGradePath, "SS.png"))
-    } else if(scoreTotal >= 200) {
+    } else if(scoreTotal >= scoreRank.total.S) {
         scoreBadge = sharp(path.join(artifactGradePath, "S.png"))
-    } else if(scoreTotal >= 180) {
+    } else if(scoreTotal >= scoreRank.total.A) {
         scoreBadge = sharp(path.join(artifactGradePath, "A.png"))
     } else {
         scoreBadge = sharp(path.join(artifactGradePath, "B.png"))
@@ -624,7 +670,8 @@ const generate = async (character, calcType="atk") => {
         let artifactImage = sharp(path.join(artifactPath, artifacts[i].artifactData.set.name.get("jp"), `${ artifactTypeMap[artifacts[i].artifactData.equipType] }.png`))
             .resize(332, 332)
             .modulate({
-                brightness: 0.6
+                brightness: 0.6,
+                saturation: 0.6
             })
         artifactImage = await mask(artifactImage, artifactMask)
 
@@ -640,8 +687,8 @@ const generate = async (character, calcType="atk") => {
         let mainStatus = artifacts[i].mainstat
         let mainOpName = mainStatus.type.get("jp")
         let mainOpValue = mainStatus.isPercent ? 
-                          mainStatus.getFormattedValue().toLocaleString(undefined, { maximumFractionDigits: 1 }) :
-                          mainStatus.getFormattedValue().toLocaleString()
+                          commaSplittedNumber(mainStatus.getFormattedValue(), 1) :
+                          commaSplittedNumber(mainStatus.getFormattedValue(), 0)
 
         let mainOpIcon = sharp(path.join(emotePath, `${ Object.keys(statusNameMap).includes(mainOpName) && mainStatus.isPercent ? statusNameMap[mainOpName].long : mainOpName }.png`))
             .resize(35, 35)
@@ -655,17 +702,216 @@ const generate = async (character, calcType="atk") => {
             fontSize: 49,
             fontColor: "#FFF"
         })
+        let artifactLevelImage = text2image(`+${ artifacts[i].level - 1 }`, {
+            fontLocation: fontPath,
+            fontSize: 21,
+            fontColor: "#FFF"
+        })
+        let artifactLevelRect = roundedRect(0, 0, 45, 24, 2)
 
-        artifactStatusPaste = await composite(artifactStatusPaste, mainOpIcon, 340 + i*373 - (await mainOpNameImage.metadata()).width, 655)
-        artifactStatusPaste = await composite(artifactStatusPaste, mainOpNameImage, 375 + i*373 - (await mainOpNameImage.metadata()).width, 655)
-        artifactStatusPaste = await composite(artifactStatusPaste, mainOpValueImage, 375 + i*373 - (await mainOpValueImage.metadata()).width, 690)
+        artifactStatusPaste = await composite(artifactStatusPaste, [
+            {
+                input: await mainOpIcon.toBuffer(),
+                left: 340 + 373*i - (await mainOpNameImage.metadata()).width,
+                top: 655
+            },
+            {
+                input: await mainOpNameImage.toBuffer(),
+                left: 375 + 373*i - (await mainOpNameImage.metadata()).width,
+                top: 655
+            },
+            {
+                input: await mainOpValueImage.toBuffer(),
+                left: 375 + 373*i - (await mainOpValueImage.metadata()).width,
+                top: 690
+            },
+            {
+                input: await artifactLevelRect.toBuffer(),
+                left: 373 + 373*i - (await artifactLevelImage.metadata()).width,
+                top: 748
+            },
+            {
+                input: await artifactLevelImage.toBuffer(),
+                left: 374 + 373*i - (await artifactLevelImage.metadata()).width,
+                top: 749
+            }
+        ])
 
         // サブOP
-        // artifact.substats.total.forEach(subStatus => {
+        let subStatusTotal = artifacts[i].substats.total
+        let subStatusSplit = artifacts[i].substats.split
+        let subStatusGrowth = {}
+        subStatusSplit.forEach(growth => {
+            if(!subStatusGrowth[growth.type.get("jp")]) {
+                subStatusGrowth[growth.type.get("jp")] = []
+            }
+            subStatusGrowth[growth.type.get("jp")].push(growth.isPercent ? 
+                                                        commaSplittedNumber(growth.getFormattedValue(), 1) : 
+                                                        String(Math.round(growth.getFormattedValue())))
+        })
+        Object.keys(subStatusGrowth).forEach(type => subStatusGrowth[type] = subStatusGrowth[type].sort().join("+"))
 
-        // })
+        for(let j = 0; j < subStatusTotal.length; j++) {
+            let subOpName = subStatusTotal[j].type.get("jp")
+            let subOpValue = subStatusTotal[j].isPercent ?
+                             commaSplittedNumber(subStatusTotal[j].getFormattedValue(), 1) :
+                             commaSplittedNumber(subStatusTotal[j].getFormattedValue(), 0)
+
+            let subOpIcon = sharp(path.join(emotePath, `${ Object.keys(statusNameMap).includes(subOpName) && subStatusTotal[j].isPercent ? statusNameMap[subOpName].long : subOpName }.png`))
+                .resize(30, 30)
+            let subOpNameImage = text2image(Object.keys(statusNameMap).includes(subOpName) && subStatusTotal[j].isPercent ? statusNameMap[subOpName].short : subOpName, {
+                fontLocation: fontPath,
+                fontSize: 25,
+                fontColor: "#FFF"
+            })
+            let subOpValueImage = text2image(`${ subOpValue }${ subStatusTotal[j].isPercent ? "%" : "" }`, {
+                fontLocation: fontPath,
+                fontSize: 25,
+                fontColor: "#FFF"
+            })
+            let subOpGrowthImage = text2image(subStatusGrowth[subOpName], {
+                fontLocation: fontPath,
+                fontSize: 11,
+                fontColor: "rgba(255, 255, 255, 0.7)"
+            })
+
+            artifactStatusPaste = await composite(artifactStatusPaste, [
+                {
+                    input: await subOpIcon.toBuffer(),
+                    left: 44 + 373*i,
+                    top: 811 + 50*j
+                },
+                {
+                    input: await subOpNameImage.toBuffer(),
+                    left: 79 + 373*i,
+                    top: 811 + 50*j
+                },
+                {
+                    input: await subOpValueImage.toBuffer(),
+                    left: 375 + 373*i - (await subOpValueImage.metadata()).width,
+                    top: 811 + 50*j
+                },
+                {
+                    input: await subOpGrowthImage.toBuffer(),
+                    left: 375 + 373*i - (await subOpGrowthImage.metadata()).width,
+                    top: 840 + 50*j
+                }
+            ])
+        }
+
+        // スコア
+        let score = calcScore(artifacts[i], calcType)
+        let scoreBadge
+        if(score >= scoreRank[artifacts[i].artifactData.equipType]["SS"]) {
+            scoreBadge = sharp(path.join(artifactGradePath, "SS.png"))
+        } else if(score >= scoreRank[artifacts[i].artifactData.equipType]["S"]) {
+            scoreBadge = sharp(path.join(artifactGradePath, "S.png"))
+        } else if(score >= scoreRank[artifacts[i].artifactData.equipType]["A"]) {
+            scoreBadge = sharp(path.join(artifactGradePath, "A.png"))
+        } else {
+            scoreBadge = sharp(path.join(artifactGradePath, "B.png"))
+        }
+
+        scoreBadge.resize(Math.floor((await scoreBadge.metadata()).width / 11))
+        let scoreText = text2image("Score", {
+            fontLocation: fontPath,
+            fontSize: 27,
+            fontColor: "#A0A0A0"
+        })
+        let scoreImage = text2image(commaSplittedNumber(score, 1), {
+            fontLocation: fontPath,
+            fontSize: 36,
+            fontColor: "#FFF"
+        })
+
+        artifactStatusPaste = await composite(artifactStatusPaste, [
+            {
+                input: await scoreBadge.toBuffer(),
+                left: 85 + 373*i,
+                top: 1013
+            },
+            {
+                input: await scoreText.toBuffer(),
+                left: 295 + 373*i - (await scoreImage.metadata()).width,
+                top: 1025
+            },
+            {
+                input: await scoreImage.toBuffer(),
+                left: 380 + 373*i - (await scoreImage.metadata()).width,
+                top: 1016
+            }
+        ])
     }
 
+    let artifactSet = {}
+    artifacts.forEach(a => {
+        artifactSet[a.artifactData.set.name.get("jp")] === undefined ? 
+        artifactSet[a.artifactData.set.name.get("jp")] = 1 : 
+        artifactSet[a.artifactData.set.name.get("jp")]++
+    })
+    let setCount = Object.keys(artifactSet).filter(set => artifactSet[set] >= 2)
+    let setBonusPaste = createImage(baseSize.width, baseSize.height)
+    for(let i = 0; i < setCount.length; i++) {
+        if(artifactSet[setCount[i]] >= 4) {
+            let setText = text2image(setCount[i], {
+                fontLocation: fontPath,
+                fontSize: 23,
+                fontColor: "#0F0"
+            })
+            let setCountRect = roundedRect(0, 0, 44, 25, 1)
+            let setCountImage = text2image(artifactSet[setCount[i]], {
+                fontLocation: fontPath,
+                fontSize: 19,
+                fontColor: "#FFF"
+            })
+            setBonusPaste = await composite(setBonusPaste, [
+                {
+                    input: await setText.toBuffer(),
+                    left: 1536,
+                    top: 263
+                },
+                {
+                    input: await setCountRect.toBuffer(),
+                    left: 1818,
+                    top: 263
+                },
+                {
+                    input: await setCountImage.toBuffer(),
+                    left: 1831,
+                    top: 265
+                }
+            ])
+        } else if(artifactSet[setCount[i]] >= 2) {
+            let setText = text2image(setCount[i], {
+                fontLocation: fontPath,
+                fontSize: 23,
+                fontColor: "#0F0"
+            })
+            let setCountRect = roundedRect(0, 0, 44, 25, 1)
+            let setCountImage = text2image(String(artifactSet[setCount[i]]), {
+                fontLocation: fontPath,
+                fontSize: 19,
+                fontColor: "#FFF"
+            })
+            setBonusPaste = await composite(setBonusPaste, [
+                {
+                    input: await setText.toBuffer(),
+                    left: 1536,
+                    top: 243 + 35*i
+                },
+                {
+                    input: await setCountRect.toBuffer(),
+                    left: 1818,
+                    top: 243 + 35*i
+                },
+                {
+                    input: await setCountImage.toBuffer(),
+                    left: 1831,
+                    top: 243 + 35*i
+                }
+            ])
+        }
+    }
 
 
     // 合成
@@ -682,7 +928,8 @@ const generate = async (character, calcType="atk") => {
                 { input: await characterStatusPaste.toBuffer(), left: 0, top: 0},
                 { input: await artifactScorePaste.toBuffer(), left: 0, top: 0},
                 { input: await artifactPreviewPaste.toBuffer(), left: 0, top: 0},
-                { input: await artifactStatusPaste.toBuffer(), left: 0, top: 0}
+                { input: await artifactStatusPaste.toBuffer(), left: 0, top: 0},
+                { input: await setBonusPaste.toBuffer(), left: 0, top: 0 }
             ]
         )
         .toFile(path.join(testPath, "test.png"))
@@ -696,5 +943,5 @@ const generate = async (character, calcType="atk") => {
 }
 
 enka.fetchUser("800282666").then(result => {
-    generate(result.characters[0])
+    generate(result.characters[2])
 })
