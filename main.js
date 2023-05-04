@@ -314,7 +314,7 @@ const generate = async (character, calcType="atk") => {
             width: 1728 - 289,
             height: 1024
         })
-        .resize(Math.floor((1728 - 289) * 0.75), Math.floor(1024 * 0.75))
+        .resize(Math.floor((1728 - 289) * 0.75))
     let characterAvatarMask = sharp(path.join(assetsPath, "CharacterMask.png"))
         .resize(Math.floor((1728 - 289) * 0.75), Math.floor(1024 * 0.75))
     characterImage = await mask(characterImage, characterAvatarMask)

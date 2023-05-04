@@ -3,7 +3,7 @@
 const path = require("path")
 const { EnkaClient } = require("enka-network-api")
 const { writeFileSync, existsSync, mkdirSync } = require("fs")
-const request = require("request")
+const request = require("request-promise")
 
 const apiBaseUrl = new URL("https://enka.network/ui")
 const enka = new EnkaClient({
@@ -38,7 +38,7 @@ const URLBlackList = [
 
 
 
-let dlFlag = 0
+
 
 if(!existsSync(destCharacter)) mkdirSync(destCharacter)
 if(!existsSync(destWeapon)) mkdirSync(destWeapon)
@@ -74,43 +74,34 @@ enka.getAllCharacters().forEach((character, c) => {
                     const filename = path.join(dest, `constellations${ i + 1 }.png`)
                     // ファイルが存在する？
                     if(!existsSync(filename) && !URLBlackList.includes(con)) {
-                        console.log(`Downloading ${ con } ...`)
+                        console.log(`Downloading ${ con }`)
                         request(con, {
                             method: "GET",
                             encoding: null
-                        }, (err, res, body) => {
-                            // 正常
-                            if(!err && res.statusCode === 200) {
-                                writeFileSync(filename, body, "binary")
-                                dlFlag++
-                            } else {
-                                console.log(`Failed request file ${ con }`)
-                            }
+                        }).then(res => {
+                            writeFileSync(filename, res, "binary")
+                        }).catch(err => {
+                            console.log(`Failed request file ${ con }.`)
                         })
                     }
                 })
             } else {
                 const filename = path.join(dest, `${ key }.png`)
                 if(!existsSync(filename) && !URLBlackList.includes(targetUrl[key])) {
-                    console.log(`Downloading ${ targetUrl[key] } ...`)
-                        request(targetUrl[key], {
-                            method: "GET",
-                            encoding: null
-                        }, (err, res, body) => {
-                            // 正常
-                            if(!err && res.statusCode === 200) {
-                                console.log(name)
-                                writeFileSync(filename, body, "binary")
-                                dlFlag++
-                            } else {
-                                console.log(`Failed request file ${ targetUrl[key] }`)
-                            }
-                        })
+                    console.log(`Downloading ${ targetUrl[key] }`)
+                    request(targetUrl[key], {
+                        method: "GET",
+                        encoding: null
+                    }).then(res => {
+                        writeFileSync(filename, res, "binary")
+                    }).catch(err => {
+                        console.log(`Failed request file ${ targetUrl[key] }.`)
+                    })
                 }
             }
         })
-    } catch(errO) {
-        console.log(errO)
+    } catch(err) {
+        console.log(err)
     }
 })
 
@@ -127,18 +118,14 @@ enka.getAllCostumes().forEach(cos => {
         if(!existsSync(destCharName)) mkdirSync(destCharName)
         if(!existsSync(destCostume)) mkdirSync(destCostume)
         if(!existsSync(filename) && !URLBlackList.includes(imageUrl)) {
-            console.log(`Downloading ${ imageUrl } ...`)
+            console.log(`Downloading ${ imageUrl }`)
             request(imageUrl, {
                 method: "GET",
                 encoding: null
-            }, (err, res, body) => {
-                // 正常
-                if(!err && res.statusCode === 200) {
-                    writeFileSync(filename, body, "binary")
-                    dlFlag++
-                } else {
-                    console.log(`Failed request file ${ imageUrl }`)
-                }
+            }).then(res => {
+                writeFileSync(filename, res, "binary")
+            }).catch(err => {
+                console.log(`Failed request file ${ imageUrl }.`)
             })
         }
     }
@@ -152,18 +139,14 @@ enka.getAllWeapons().forEach(weapon => {
     let filename = path.join(destWeapon, `${ name }.png`)
 
     if(!existsSync(filename) && !URLBlackList.includes(imageUrl)) {
-        console.log(`Downloading ${ imageUrl } ...`)
+        console.log(`Downloading ${ imageUrl }`)
         request(imageUrl, {
             method: "GET",
             encoding: null
-        }, (err, res, body) => {
-            // 正常
-            if(!err && res.statusCode === 200) {
-                writeFileSync(filename, body, "binary")
-                dlFlag++
-            } else {
-                console.log(`Failed request file ${ imageUrl }`)
-            }
+        }).then(res => {
+            writeFileSync(filename, res, "binary")
+        }).catch(err => {
+            console.log(`Failed request file ${ imageUrl }.`)
         })
     }
 })
@@ -183,24 +166,10 @@ enka.getAllArtifacts().forEach(artifact => {
         request(imageUrl, {
             method: "GET",
             encoding: null
-        }, (err, res, body) => {
-            // 正常
-            if(!err && res.statusCode === 200) {
-                writeFileSync(filename, body, "binary")
-                dlFlag++
-            } else {
-                console.log(`Failed request file ${ imageUrl }`)
-            }
+        }).then(res => {
+            writeFileSync(filename, res, "binary")
+        }).catch(err => {
+            console.log(`Failed request file ${ imageUrl }.`)
         })
     }
 })
-
-
-
-// request-promiseモジュールで実装したい
-// あと旅人のsplashimage がなんかデカい
-// if(dlFlag > 0) {
-//     console.log(`Downloaded ${ dlFlag } data.`)
-// } else {
-//     console.log("Not found new image data.")
-// }
