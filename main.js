@@ -1,9 +1,9 @@
 "use strict"
 
 const path = require("path")
-const { EnkaClient, Character, Artifact } = require("enka-network-api")
+const { Character, Artifact } = require("enka-network-api")
 const sharp = require("sharp")
-const { text2image, roundedRect, mask, createImage, composite } = require("./imgUtil")
+const { roundedRect, mask, createImage, composite, TextToImage } = require("./imgUtil")
 const { exit } = require("process")
 
 const testPath          = path.join(__dirname, "test")
@@ -22,9 +22,9 @@ const baseSize = {
     height: 1080
 }
 
-const enka = new EnkaClient({
-    defaultLanguage: "jp",
-    defaultImageBaseUrl: "https://enka.network/ui"
+const textToImage = new TextToImage(fontPath, {
+    defaultFillColor: "#FFFFFF",
+    defaultAnchor: "left top"
 })
 
 const fightProp = {
@@ -119,6 +119,8 @@ const scoreRank = {
 
 
 
+
+
 /**
  * 聖遺物のスコア計算
  * @param {Artifact} artifact 聖遺物
@@ -175,6 +177,7 @@ const commaSplittedNumber = (num, round=-1) => {
  * 
  * @param {Character} character 
  * @param {"hp"|"atk"|"def"|"chg"|"mst"} calcType 
+ * @returns {Promise<Buffer>} 
  */
 const generate = async (character, calcType="atk") => {
     // キャラクター
@@ -329,33 +332,25 @@ const generate = async (character, calcType="atk") => {
         .resize(128, 128)
     let weaponPaste = createImage(baseSize.width, baseSize.height)
 
-    let weaponNameImage = text2image(weaponName, {
-        fontLocation: fontPath,
-        fontSize: 26,
-        fontColor: "#FFF"
-    })
-    let weaponLevelImage = text2image(`Lv.${ weaponLevel }`, {
-        fontLocation: fontPath,
-        fontSize: 24,
-        fontColor: "#FFF"
-    })
+    let weaponNameImage = textToImage.render(weaponName, {
+        font: { size: 26 }
+    }).toSharp()
+    let weaponLevelImage = textToImage.render(`Lv.${ weaponLevel }`, {
+        font: { size: 24 }
+    }).toSharp()
     let rectWeaponLevel = roundedRect(0, 0, (await weaponLevelImage.metadata()).width + 4, 28, 1)
     
 
     let baseAttackIcon = sharp(path.join(emotePath, "基礎攻撃力.png"))
         .resize(23, 23)
-    let weaponBaseAttackImage = text2image(`基礎攻撃力  ${ weaponBaseAtk }`, {
-        fontLocation: fontPath,
-        fontSize: 23,
-        fontColor: "#FFF"
-    })
+    let weaponBaseAttackImage = textToImage.render(`基礎攻撃力  ${ weaponBaseAtk }`, {
+        font: { size: 23 }
+    }).toSharp()
 
     let rectWeaponRank = roundedRect(0, 0, 40, 25, 1)
-    let weaponRankImage = text2image(`R${ weaponRank }`, {
-        fontLocation: fontPath,
-        fontSize: 24,
-        fontColor: "#FFF"
-    })
+    let weaponRankImage = textToImage.render(`R${ weaponRank }`, {
+        font: { size: 24 }
+    }).toSharp()
 
     let weaponPasteList = []
     weaponPasteList.push(
@@ -372,11 +367,9 @@ const generate = async (character, calcType="atk") => {
     if(weaponSubStatusValue) {
         let weaponSubStatusIcon = sharp(path.join(emotePath, `${ ["HP", "攻撃力", "防御力"].includes(weaponSubStatusType) ? statusNameMap[weaponSubStatusType].long : weaponSubStatusType }.png`))
             .resize(23, 23)
-        let weaponSubStatusImage = text2image(`${ Object.keys(statusNameMap).includes(weaponSubStatusName) ? statusNameMap[weaponSubStatusName].short : weaponSubStatusName }  ${ weaponSubStatusValue }${ weapon.weaponStats[1].isPercent ? "%" : "" }`, {
-            fontLocation: fontPath,
-            fontSize: 23,
-            fontColor: "#FFF"
-        })
+        let weaponSubStatusImage = textToImage.render(`${ Object.keys(statusNameMap).includes(weaponSubStatusName) ? statusNameMap[weaponSubStatusName].short : weaponSubStatusName }  ${ weaponSubStatusValue }${ weapon.weaponStats[1].isPercent ? "%" : "" }`, {
+            font: { size: 23 }
+        }).toSharp()
 
         weaponPasteList.push(
             { input: await weaponSubStatusIcon.toBuffer(), left: 1600, top: 155 },
@@ -439,21 +432,15 @@ const generate = async (character, calcType="atk") => {
 
     // 左上のテキスト等
     let characterInfoPaste = createImage(baseSize.width, baseSize.height)
-    let characterNameImage = text2image(characterName, {
-        fontLocation: fontPath,
-        fontSize: 48,
-        fontColor: "#FFF"
-    })
-    let characterLevelImage = text2image(`Lv.${ characterLevel }`, {
-        fontLocation: fontPath,
-        fontSize: 25,
-        fontColor: "#FFF"
-    })
-    let friendshipImage = text2image(`${ characterFriendship }`, {
-        fontLocation: fontPath,
-        fontSize: 25,
-        fontColor: "#FFF"
-    })
+    let characterNameImage = textToImage.render(characterName, {
+        font: { size: 48 }
+    }).toSharp()
+    let characterLevelImage = textToImage.render(`Lv.${ characterLevel }`, {
+        font: { size: 25 }
+    }).toSharp()
+    let friendshipImage = textToImage.render(`${ characterFriendship }`, {
+        font: { size: 25 }
+    }).toSharp()
     let rectFriendShip = roundedRect(
         35 + (await characterLevelImage.metadata()).width + 5, 
         74, 
@@ -464,21 +451,24 @@ const generate = async (character, calcType="atk") => {
     let friendshipIcon = sharp(path.join(assetsPath, "Love.png"))
     friendshipIcon.resize(Math.floor((await friendshipIcon.metadata()).width * (24 / (await friendshipIcon.metadata()).height)), 24, { fit: "fill" })
 
-    let normalAttackLevelImage = text2image(`Lv.${ characterTalent.normalAttack }`, {
-        fontLocation: fontPath,
-        fontSize: 17,
-        fontColor: characterTalent.normalAttack >= 10 ? "#0FF" : "#FFF"
-    })
-    let elementalSkillLevelImage = text2image(`Lv.${ characterTalent.elementalSkill }`, {
-        fontLocation: fontPath,
-        fontSize: 17,
-        fontColor: characterTalent.elementalSkill >= 10 ? "#0FF" : "#FFF"
-    })
-    let elementalBurstLevelImage = text2image(`Lv.${ characterTalent.elementalBurst }`, {
-        fontLocation: fontPath,
-        fontSize: 17,
-        fontColor: characterTalent.elementalBurst >= 10 ? "#0FF" : "#FFF"
-    })
+    let normalAttackLevelImage = textToImage.render(`Lv.${ characterTalent.normalAttack }`, {
+        font: {
+            size: 17,
+            fill: characterTalent.normalAttack >= 10 ? "#0FF" : "#FFF"
+        }
+    }).toSharp()
+    let elementalSkillLevelImage = textToImage.render(`Lv.${ characterTalent.elementalSkill }`, {
+        font: {
+            size: 17,
+            fill: characterTalent.elementalSkill >= 10 ? "#0FF" : "#FFF"
+        }
+    }).toSharp()
+    let elementalBurstLevelImage = textToImage.render(`Lv.${ characterTalent.elementalBurst }`, {
+        font: {
+            size: 17,
+            fill: characterTalent.elementalBurst >= 10 ? "#0FF" : "#FFF"
+        }
+    }).toSharp()
 
     characterInfoPaste
         .composite(
@@ -502,83 +492,66 @@ const generate = async (character, calcType="atk") => {
     let characterStatusPasteList = []
 
     // HP
-    let baseHealthImage = text2image(characterBaseHealth, {
-        fontLocation: fontPath,
-        fontSize: 12,
-        fontColor: "#FFF"
-    })
-    let addHealthImage = text2image(`+${ characterAddHealth }`, {
-        fontLocation: fontPath,
-        fontSize: 12,
-        fontColor: "#0F0"
-    })
-    let maxHealthImage = text2image(characterMaxHealth, {
-        fontLocation: fontPath,
-        fontSize: 26,
-        fontColor: "#FFF"
-    })
+    let baseHealthImage = textToImage.render(characterBaseHealth, {
+        font: { size: 12 }
+    }).toSharp()
+    let addHealthImage = textToImage.render(`+${ characterAddHealth }`, {
+        font: {
+            size: 12,
+            fill: "#0F0"
+        }
+    }).toSharp()
+    let maxHealthImage = textToImage.render(characterMaxHealth, {
+        font: { size: 26 }
+    }).toSharp()
 
     // 攻撃力
-    let baseAttackImage = text2image(characterBaseAttack, {
-        fontLocation: fontPath,
-        fontSize: 12,
-        fontColor: "#FFF"
-    })
-    let addAttackImage = text2image(`+${ characterAddAttack }`, {
-        fontLocation: fontPath,
-        fontSize: 12,
-        fontColor: "#0F0"
-    })
-    let attackImage = text2image(characterAttack, {
-        fontLocation: fontPath,
-        fontSize: 26,
-        fontColor: "#FFF"
-    })
+    let baseAttackImage = textToImage.render(characterBaseAttack, {
+        font: { size: 12 }
+    }).toSharp()
+    let addAttackImage = textToImage.render(`+${ characterAddAttack }`, {
+        font: {
+            size: 12,
+            fill: "#0F0"
+        }
+    }).toSharp()
+    let attackImage = textToImage.render(characterAttack, {
+        font: { size: 26 }
+    }).toSharp()
 
     // 防御力
-    let baseDefenseImage = text2image(characterBaseDefense, {
-        fontLocation: fontPath,
-        fontSize: 12,
-        fontColor: "#FFF"
-    })
-    let addDefenseImage = text2image(`+${ characterAddDefense }`, {
-        fontLocation: fontPath,
-        fontSize: 12,
-        fontColor: "#0F0"
-    })
-    let defenseImage = text2image(characterDefense, {
-        fontLocation: fontPath,
-        fontSize: 26,
-        fontColor: "#FFF"
-    })
+    let baseDefenseImage = textToImage.render(characterBaseDefense, {
+        font: { size: 12 }
+    }).toSharp()
+    let addDefenseImage = textToImage.render(`+${ characterAddDefense }`, {
+        font: {
+            size: 12,
+            fill: "#0F0"
+        }
+    }).toSharp()
+    let defenseImage = textToImage.render(characterDefense, {
+        font: { size: 26 }
+    }).toSharp()
 
     // 元素熟知
-    let elementMasteryImage = text2image(characterElementMastery, {
-        fontLocation: fontPath,
-        fontSize: 26,
-        fontColor: "#FFF"
-    })
+    let elementMasteryImage = textToImage.render(characterElementMastery, {
+        font: { size: 26 }
+    }).toSharp()
 
     // 会心率
-    let critRateImage = text2image(`${ characterCritRate }%`, {
-        fontLocation: fontPath,
-        fontSize: 26,
-        fontColor: "#FFF"
-    })
+    let critRateImage = textToImage.render(`${ characterCritRate }%`, {
+        font: { size: 26 }
+    }).toSharp()
 
     // 会心ダメージ
-    let critDamageImage = text2image(`${ characterCritDamage }%`, {
-        fontLocation: fontPath,
-        fontSize: 26,
-        fontColor: "#FFF"
-    })
+    let critDamageImage = textToImage.render(`${ characterCritDamage }%`, {
+        font: { size: 26 }
+    }).toSharp()
 
     // 元素チャージ効率
-    let chargeEfficiencyImage = text2image(`${ characterChargeEfficiency }%`, {
-        fontLocation: fontPath,
-        fontSize: 26,
-        fontColor: "#FFF"
-    })
+    let chargeEfficiencyImage = textToImage.render(`${ characterChargeEfficiency }%`, {
+        font: { size: 26 }
+    }).toSharp()
 
     characterStatusPasteList.push(
                 { input: await baseHealthImage.toBuffer(), left: 1360 - (await baseHealthImage.metadata()).width - (await addHealthImage.metadata()).width - 1, top: 97 + 70*0 },
@@ -601,17 +574,13 @@ const generate = async (character, calcType="atk") => {
         let maxValueStatusIcon = sharp(path.join(emotePath, `${ characterMaxValueStatus.name }.png`))
             .resize(40, 40)
 
-        let maxValueStatusNameImage = text2image(characterMaxValueStatus.name, {
-            fontLocation: fontPath,
-            fontSize: 27,
-            fontColor: "#FFF"
-        })
+        let maxValueStatusNameImage = textToImage.render(characterMaxValueStatus.name, {
+            font: { size: 27 }
+        }).toSharp()
 
-        let maxValueStatusImage = text2image(`${ characterMaxValueStatus.value.toFixed(1) }%`, {
-            fontLocation: fontPath,
-            fontSize: 26,
-            fontColor: "#FFF"
-        })
+        let maxValueStatusImage = textToImage.render(`${ characterMaxValueStatus.value.toFixed(1) }%`, {
+            font: { size: 26 }
+        }).toSharp()
 
         characterStatusPasteList.push(
             { input: await maxValueStatusIcon.toBuffer(), left: 787, top: 62 + 70*7 },
@@ -627,16 +596,12 @@ const generate = async (character, calcType="atk") => {
     // 合計スコア
     let artifactScorePaste = createImage(baseSize.width, baseSize.height)
 
-    let scoreTotalImage = text2image(scoreTotal.toFixed(1), {
-        fontLocation: fontPath,
-        fontSize: 75,
-        fontColor: "#FFF"
-    })
-    let convAsImage = text2image(`${ convAsMap[calcType] }換算`, {
-        fontLocation: fontPath,
-        fontSize: 24,
-        fontColor: "#FFF"
-    })
+    let scoreTotalImage = textToImage.render(scoreTotal.toFixed(1), {
+        font: { size: 75 }
+    }).toSharp()
+    let convAsImage = textToImage.render(`${ convAsMap[calcType] }換算`, {
+        font: { size: 24 }
+    }).toSharp()
 
     let scoreBadge
     if(scoreTotal >= scoreRank.total.SS) {
@@ -692,21 +657,15 @@ const generate = async (character, calcType="atk") => {
 
         let mainOpIcon = sharp(path.join(emotePath, `${ Object.keys(statusNameMap).includes(mainOpName) && mainStatus.isPercent ? statusNameMap[mainOpName].long : mainOpName }.png`))
             .resize(35, 35)
-        let mainOpNameImage = text2image(Object.keys(statusNameMap).includes(mainOpName) && mainStatus.isPercent ? statusNameMap[mainOpName].short : mainOpName, {
-            fontLocation: fontPath,
-            fontSize: 29,
-            fontColor: "#FFF"
-        })
-        let mainOpValueImage = text2image(`${ mainOpValue }${ mainStatus.isPercent ? "%" : "" }` ,{
-            fontLocation: fontPath,
-            fontSize: 49,
-            fontColor: "#FFF"
-        })
-        let artifactLevelImage = text2image(`+${ artifacts[i].level - 1 }`, {
-            fontLocation: fontPath,
-            fontSize: 21,
-            fontColor: "#FFF"
-        })
+        let mainOpNameImage = textToImage.render(Object.keys(statusNameMap).includes(mainOpName) && mainStatus.isPercent ? statusNameMap[mainOpName].short : mainOpName, {
+            font: { size: 29 }
+        }).toSharp()
+        let mainOpValueImage = textToImage.render(`${ mainOpValue }${ mainStatus.isPercent ? "%" : "" }` ,{
+            font: { size: 49 }
+        }).toSharp()
+        let artifactLevelImage = textToImage.render(`+${ artifacts[i].level - 1 }`, {
+            font: { size: 21 }
+        }).toSharp()
         let artifactLevelRect = roundedRect(0, 0, 45, 24, 2)
 
         artifactStatusPaste = await composite(artifactStatusPaste, [
@@ -759,21 +718,18 @@ const generate = async (character, calcType="atk") => {
 
             let subOpIcon = sharp(path.join(emotePath, `${ Object.keys(statusNameMap).includes(subOpName) && subStatusTotal[j].isPercent ? statusNameMap[subOpName].long : subOpName }.png`))
                 .resize(30, 30)
-            let subOpNameImage = text2image(Object.keys(statusNameMap).includes(subOpName) && subStatusTotal[j].isPercent ? statusNameMap[subOpName].short : subOpName, {
-                fontLocation: fontPath,
-                fontSize: 25,
-                fontColor: "#FFF"
-            })
-            let subOpValueImage = text2image(`${ subOpValue }${ subStatusTotal[j].isPercent ? "%" : "" }`, {
-                fontLocation: fontPath,
-                fontSize: 25,
-                fontColor: "#FFF"
-            })
-            let subOpGrowthImage = text2image(subStatusGrowth[subOpName], {
-                fontLocation: fontPath,
-                fontSize: 11,
-                fontColor: "rgba(255, 255, 255, 0.7)"
-            })
+            let subOpNameImage = textToImage.render(Object.keys(statusNameMap).includes(subOpName) && subStatusTotal[j].isPercent ? statusNameMap[subOpName].short : subOpName, {
+                font: { size: 25 }
+            }).toSharp()
+            let subOpValueImage = textToImage.render(`${ subOpValue }${ subStatusTotal[j].isPercent ? "%" : "" }`, {
+                font: { size: 25 }
+            }).toSharp()
+            let subOpGrowthImage = textToImage.render(subStatusGrowth[subOpName], {
+                font: {
+                    size: 11,
+                    fill: "rgba(255, 255, 255, 0.7)"
+                }
+            }).toSharp()
 
             artifactStatusPaste = await composite(artifactStatusPaste, [
                 {
@@ -813,16 +769,15 @@ const generate = async (character, calcType="atk") => {
         }
 
         scoreBadge.resize(Math.floor((await scoreBadge.metadata()).width / 11))
-        let scoreText = text2image("Score", {
-            fontLocation: fontPath,
-            fontSize: 27,
-            fontColor: "#A0A0A0"
-        })
-        let scoreImage = text2image(commaSplittedNumber(score, 1), {
-            fontLocation: fontPath,
-            fontSize: 36,
-            fontColor: "#FFF"
-        })
+        let scoreText = textToImage.render("Score", {
+            font: {
+                size: 27,
+                fill: "#A0A0A0"
+            }
+        }).toSharp()
+        let scoreImage = textToImage.render(commaSplittedNumber(score, 1), {
+            font: { size: 36 }
+        }).toSharp()
 
         artifactStatusPaste = await composite(artifactStatusPaste, [
             {
@@ -853,17 +808,18 @@ const generate = async (character, calcType="atk") => {
     let setBonusPaste = createImage(baseSize.width, baseSize.height)
     for(let i = 0; i < setCount.length; i++) {
         if(artifactSet[setCount[i]] >= 4) {
-            let setText = text2image(setCount[i], {
-                fontLocation: fontPath,
-                fontSize: 23,
-                fontColor: "#0F0"
-            })
+            console.log("debug1")
+            let setText = textToImage.render(setCount[i], {
+                font: {
+                    size: 23,
+                    fill: "#0F0"
+                }
+            }).toSharp()
             let setCountRect = roundedRect(0, 0, 44, 25, 1)
-            let setCountImage = text2image(artifactSet[setCount[i]], {
-                fontLocation: fontPath,
-                fontSize: 19,
-                fontColor: "#FFF"
-            })
+            let setCountImage = textToImage.render(String(artifactSet[setCount[i]]), {
+                font: { size: 19 }
+            }).toSharp()
+            console.log("debug2")
             setBonusPaste = await composite(setBonusPaste, [
                 {
                     input: await setText.toBuffer(),
@@ -877,22 +833,21 @@ const generate = async (character, calcType="atk") => {
                 },
                 {
                     input: await setCountImage.toBuffer(),
-                    left: 1831,
+                    left: 1834,
                     top: 265
                 }
             ])
         } else if(artifactSet[setCount[i]] >= 2) {
-            let setText = text2image(setCount[i], {
-                fontLocation: fontPath,
-                fontSize: 23,
-                fontColor: "#0F0"
-            })
+            let setText = textToImage.render(setCount[i], {
+                font: {
+                    size: 23,
+                    fill: "#0F0"
+                }
+            }).toSharp()
             let setCountRect = roundedRect(0, 0, 44, 25, 1)
-            let setCountImage = text2image(String(artifactSet[setCount[i]]), {
-                fontLocation: fontPath,
-                fontSize: 19,
-                fontColor: "#FFF"
-            })
+            let setCountImage = textToImage.render(String(artifactSet[setCount[i]]), {
+                font: { size: 19 }
+            }).toSharp()
             setBonusPaste = await composite(setBonusPaste, [
                 {
                     input: await setText.toBuffer(),
@@ -906,42 +861,34 @@ const generate = async (character, calcType="atk") => {
                 },
                 {
                     input: await setCountImage.toBuffer(),
-                    left: 1831,
-                    top: 243 + 35*i
+                    left: 1834,
+                    top: 245 + 35*i
                 }
             ])
         }
     }
 
 
+
     // 合成
-    base
-        .composite(
-            [
-                { input: await characterPaste.toBuffer(), left: 0, top: 0 },
-                { input: await shadow.toBuffer(), left: 0, top: 0},
-                { input: await weaponPaste.toBuffer(), left: 0, top: 0},
-                { input: await weaponRarePaste.toBuffer(), left: 0, top: 0},
-                { input: await talentBasePaste.toBuffer(), left: 0, top: 0},
-                { input: await constBasePaste.toBuffer(), left: 0, top: 0},
-                { input: await characterInfoPaste.toBuffer(), left: 0, top: 0},
-                { input: await characterStatusPaste.toBuffer(), left: 0, top: 0},
-                { input: await artifactScorePaste.toBuffer(), left: 0, top: 0},
-                { input: await artifactPreviewPaste.toBuffer(), left: 0, top: 0},
-                { input: await artifactStatusPaste.toBuffer(), left: 0, top: 0},
-                { input: await setBonusPaste.toBuffer(), left: 0, top: 0 }
-            ]
-        )
-        .toFile(path.join(testPath, "test.png"))
-        .then((info) => {
-            console.log("Generated image.")
-            exit(1)
-        })
-        .catch((err) => {
-            console.log(err)
-        })
+    return await base.composite(
+        [
+            { input: await characterPaste.toBuffer(), left: 0, top: 0 },
+            { input: await shadow.toBuffer(), left: 0, top: 0},
+            { input: await weaponPaste.toBuffer(), left: 0, top: 0},
+            { input: await weaponRarePaste.toBuffer(), left: 0, top: 0},
+            { input: await talentBasePaste.toBuffer(), left: 0, top: 0},
+            { input: await constBasePaste.toBuffer(), left: 0, top: 0},
+            { input: await characterInfoPaste.toBuffer(), left: 0, top: 0},
+            { input: await characterStatusPaste.toBuffer(), left: 0, top: 0},
+            { input: await artifactScorePaste.toBuffer(), left: 0, top: 0},
+            { input: await artifactPreviewPaste.toBuffer(), left: 0, top: 0},
+            { input: await artifactStatusPaste.toBuffer(), left: 0, top: 0},
+            { input: await setBonusPaste.toBuffer(), left: 0, top: 0 }
+        ]
+    ).toBuffer()
 }
 
-enka.fetchUser("800282666").then(result => {
-    generate(result.characters[2])
-})
+
+
+module.exports = { generate }

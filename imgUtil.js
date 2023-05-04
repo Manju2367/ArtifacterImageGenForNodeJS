@@ -5,32 +5,82 @@ const sharp = require("sharp")
 
 
 
-/**
- * 
- * @param {String} text 
- * @param {Object} options 
- * @param {Number} options.x 
- * @param {Number} options.y 
- * @param {String} options.fontLocation 
- * @param {Number} options.fontSize 
- * @param {String} options.fontColor 
- * @returns {import("sharp").Sharp}
- */
-const text2image = (text, options={
-    x: 0,
-    y: 0
-}) => {
-    const textToSVG = TextToSVG.loadSync(options.fontLocation)
-    return sharp(Buffer.from(textToSVG.getSVG(text, {
-        x: options.x,
-        y: options.y,
-        anchor: "left top",
-        fontSize: options.fontSize,
-        attributes: {
-            fill: options.fontColor
+class TextToImage {
+    /**
+     * 
+     * @param {String} fontLocation 
+     * @param {Object} options 
+     * @param {String} options.defaultFillColor 
+     * @param {String} options.defaultStrokeColor 
+     * @param {String} options.defaultAnchor 
+     */
+    constructor(fontLocation, options) {
+        this.renderer = TextToSVG.loadSync(fontLocation)
+        this.font = {}
+        this.font.fill = options.defaultFillColor === undefined ? "#000000" : options.defaultFillColor
+        this.font.stroke = options.defaultStrokeColor === undefined ? "none" : options.defaultStrokeColor
+        this.anchor = options.defaultAnchor === undefined ? "left baseline" : options.defaultAnchor
+    }
+
+    /**
+     * 
+     * @param {String} text 
+     * @param {Object} [options] 
+     * @param {Object} options.font 
+     * @param {Number} options.font.size 
+     * @param {String} options.font.fill 
+     * @param {String} options.font.stroke 
+     * @param {Number} options.x 
+     * @param {Number} options.y 
+     * @param {String} options.anchor 
+     * @returns 
+     */
+    render(text, options) {
+        let that = this
+        this.textSvg = this.renderer.getSVG(text, {
+            fontSize: options.font.size === undefined ? 16 : options.font.size,
+            x: options.x === undefined ? 0 : options.x,
+            y: options.y === undefined ? 0 : options.y,
+            anchor: options.anchor === undefined ? that.anchor : options.anchor,
+            attributes: {
+                fill: options.font !== undefined && options.font.fill !== undefined ? options.font.fill : that.font.fill,
+                stroke: options.font !== undefined && options.font.stroke ? options.font.stroke : that.font.stroke
+            }
+        })
+        this.textBuffer = Buffer.from(this.textSvg)
+        return this
+    }
+
+
+
+    /**
+     * 
+     * @param {"jpg"|"png"|"webp"|"avif"|"gif"|"tiff"|"raw"} format Default format is png
+     * @returns {Sharp.sharp}
+     */
+    toSharp(format="png") {
+        this.sharpObject = sharp(this.textBuffer)
+        switch(format) {
+            case "jpg":
+                return this.sharpObject.jpeg()
+            case "png":
+                return this.sharpObject.png()
+            case "webp":
+                return this.sharpObject.webp()
+            case "avif":
+                return this.sharpObject.avif()
+            case "gif":
+                return this.sharpObject.gif()
+            case "tiff":
+                return this.sharpObject.tiff()
+            case "raw":
+                return this.sharpObject.raw()
+            default:
+                return this.sharpObject.png()
         }
-    }))).png()
+    }
 }
+
 
 
 
@@ -227,7 +277,7 @@ const rgba = (r, g, b, a) => {
 
 
 module.exports = {
-    text2image,
+    TextToImage,
     roundedRect,
     mask,
     createImage,
