@@ -307,7 +307,7 @@ const generate = async (character, calcType="atk") => {
 
     // キャラクター
     let characterPaste = createImage(baseSize.width, baseSize.height)
-    let characterImage = sharp(path.join(characterPath, characterName, "splashImage.png"))
+    let characterImage = sharp(path.join(characterPath, characterName, character.costume.isDefault ? "splashImage.png" : `costumes/${ character.costume.name.get("jp") }.png`))
     if(/蛍\(.\)/.test(characterName) || /空\(.\)/.test(characterName)) {
         let paste = createImage(2048, 1024)
         characterImage.resize(Math.floor(2048*0.9))
