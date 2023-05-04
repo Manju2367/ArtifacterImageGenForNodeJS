@@ -308,6 +308,18 @@ const generate = async (character, calcType="atk") => {
     // キャラクター
     let characterPaste = createImage(baseSize.width, baseSize.height)
     let characterImage = sharp(path.join(characterPath, characterName, "splashImage.png"))
+    if(/蛍\(.\)/.test(characterName) || /空\(.\)/.test(characterName)) {
+        let paste = createImage(2048, 1024)
+        characterImage.resize(Math.floor(2048*0.9))
+        paste.composite([{
+            input: await characterImage.toBuffer(),
+            left: Math.floor((2048 - 2048*0.9) / 2),
+            top: (1024 - Math.floor(1024*0.9)) + 20,
+        }])
+        characterImage = sharp(await paste.toBuffer())
+    }
+    
+    characterImage
         .extract({
             left: 289,
             top: 0,
@@ -808,7 +820,6 @@ const generate = async (character, calcType="atk") => {
     let setBonusPaste = createImage(baseSize.width, baseSize.height)
     for(let i = 0; i < setCount.length; i++) {
         if(artifactSet[setCount[i]] >= 4) {
-            console.log("debug1")
             let setText = textToImage.render(setCount[i], {
                 font: {
                     size: 23,
@@ -819,7 +830,6 @@ const generate = async (character, calcType="atk") => {
             let setCountImage = textToImage.render(String(artifactSet[setCount[i]]), {
                 font: { size: 19 }
             }).toSharp()
-            console.log("debug2")
             setBonusPaste = await composite(setBonusPaste, [
                 {
                     input: await setText.toBuffer(),
