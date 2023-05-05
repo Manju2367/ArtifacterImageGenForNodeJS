@@ -133,25 +133,25 @@ const calcScore = (artifact, type="atk") => {
         let value = Math.floor(stat.getFormattedValue() * 10) / 10
 
         // 会心率
-        if(fightProp[stat.id] === "会心率") {
+        if(fightProp[stat.fightProp] === "会心率") {
             score += (value * 2)
         }
         // 会心ダメージ
-        if(fightProp[stat.id] === "会心ダメージ") {
+        if(fightProp[stat.fightProp] === "会心ダメージ") {
             score += value
         }
 
         // HP%, 攻撃力%, 防御力%, 元素チャージ効率換算
         if(
-            (type === "hp"  && fightProp[stat.id] === "HPパーセンテージ")  ||
-            (type === "atk" && fightProp[stat.id] === "攻撃パーセンテージ") ||
-            (type === "def" && fightProp[stat.id] === "防御パーセンテージ") ||
-            (type === "chg" && fightProp[stat.id] === "元素チャージ効率")
+            (type === "hp"  && fightProp[stat.fightProp] === "HPパーセンテージ")  ||
+            (type === "atk" && fightProp[stat.fightProp] === "攻撃パーセンテージ") ||
+            (type === "def" && fightProp[stat.fightProp] === "防御パーセンテージ") ||
+            (type === "chg" && fightProp[stat.fightProp] === "元素チャージ効率")
         ) {
             score += value
         }
         // 元素熟知換算
-        if(type == "mst" && fightProp[stat.id] === "元素熟知") {
+        if(type == "mst" && fightProp[stat.fightProp] === "元素熟知") {
             score += (value * 0.25)
         }
     })
@@ -200,39 +200,39 @@ const generate = async (character, calcType="atk") => {
     const characterCritDamage       = characterStatus.critDamage.getFormattedValue().toFixed(1)
     const characterChargeEfficiency = characterStatus.chargeEfficiency.getFormattedValue().toFixed(1)
     const characterPyroDamage       = {
-        name: characterStatus.pyroDamage.type.get("jp"),
+        name: characterStatus.pyroDamage.fightPropName.get("jp"),
         value: Math.round(characterStatus.pyroDamage.getFormattedValue() * 10) / 10
     }
     const characterHydroDamage      = {
-        name: characterStatus.hydroDamage.type.get("jp"),
+        name: characterStatus.hydroDamage.fightPropName.get("jp"),
         value: Math.round(characterStatus.hydroDamage.getFormattedValue() * 10) / 10
     }
     const characterCryoDamage       = {
-        name: characterStatus.cryoDamage.type.get("jp"),
+        name: characterStatus.cryoDamage.fightPropName.get("jp"),
         value: Math.round(characterStatus.cryoDamage.getFormattedValue() * 10) / 10
     }
     const characterElectroDamage    = {
-        name: characterStatus.electroDamage.type.get("jp"),
+        name: characterStatus.electroDamage.fightPropName.get("jp"),
         value: Math.round(characterStatus.electroDamage.getFormattedValue() * 10) / 10
     }
     const characterDendroDamage     = {
-        name: characterStatus.dendroDamage.type.get("jp"),
+        name: characterStatus.dendroDamage.fightPropName.get("jp"),
         value: Math.round(characterStatus.dendroDamage.getFormattedValue() * 10) / 10
     }
     const characterAnemoDamage      = {
-        name: characterStatus.anemoDamage.type.get("jp"),
+        name: characterStatus.anemoDamage.fightPropName.get("jp"),
         value: Math.round(characterStatus.anemoDamage.getFormattedValue() * 10) / 10
     }
     const characterGeoDamage        = {
-        name: characterStatus.geoDamage.type.get("jp"),
+        name: characterStatus.geoDamage.fightPropName.get("jp"),
         value: Math.round(characterStatus.geoDamage.getFormattedValue() * 10) / 10
     }
     const characterPhysicalDamage   = {
-        name: characterStatus.physicalDamage.type.get("jp"),
+        name: characterStatus.physicalDamage.fightPropName.get("jp"),
         value: Math.round(characterStatus.physicalDamage.getFormattedValue() * 10) / 10
     }
     const characterHealAdd          = {
-        name: characterStatus.healAdd.type.get("jp"),
+        name: characterStatus.healAdd.fightPropName.get("jp"),
         value: Math.round(characterStatus.healAdd.getFormattedValue() * 10) / 10
     }
     const characterMaxValueStatus   = [
@@ -263,7 +263,7 @@ const generate = async (character, calcType="atk") => {
     const weaponRarelity            = weapon.weaponData.stars
     const weaponBaseAtk             = weapon.weaponStats[0].value
     const weaponSubStatusName       = weapon.weaponStats[1] ?
-                                      weapon.weaponStats[1].type.get("jp") :
+                                      weapon.weaponStats[1].fightPropName.get("jp") :
                                       undefined
     const weaponSubStatusValue      = weapon.weaponStats[1] ?
                                       weapon.weaponStats[1].isPercent ?
@@ -271,7 +271,7 @@ const generate = async (character, calcType="atk") => {
                                       weapon.weaponStats[1].getFormattedValue().toFixed() :
                                       undefined
     const weaponSubStatusType       = weapon.weaponStats[1] ?
-                                      weapon.weaponStats[1].type.get("jp") :
+                                      weapon.weaponStats[1].fightPropName.get("jp") :
                                       undefined
 
     // 聖遺物
@@ -662,7 +662,7 @@ const generate = async (character, calcType="atk") => {
 
         // メインOP
         let mainStatus = artifacts[i].mainstat
-        let mainOpName = mainStatus.type.get("jp")
+        let mainOpName = mainStatus.fightPropName.get("jp")
         let mainOpValue = mainStatus.isPercent ? 
                           commaSplittedNumber(mainStatus.getFormattedValue(), 1) :
                           commaSplittedNumber(mainStatus.getFormattedValue(), 0)
@@ -713,17 +713,17 @@ const generate = async (character, calcType="atk") => {
         let subStatusSplit = artifacts[i].substats.split
         let subStatusGrowth = {}
         subStatusSplit.forEach(growth => {
-            if(!subStatusGrowth[growth.type.get("jp")]) {
-                subStatusGrowth[growth.type.get("jp")] = []
+            if(!subStatusGrowth[growth.fightPropName.get("jp")]) {
+                subStatusGrowth[growth.fightPropName.get("jp")] = []
             }
-            subStatusGrowth[growth.type.get("jp")].push(growth.isPercent ? 
+            subStatusGrowth[growth.fightPropName.get("jp")].push(growth.isPercent ? 
                                                         commaSplittedNumber(growth.getFormattedValue(), 1) : 
                                                         String(Math.round(growth.getFormattedValue())))
         })
         Object.keys(subStatusGrowth).forEach(type => subStatusGrowth[type] = subStatusGrowth[type].sort().join("+"))
 
         for(let j = 0; j < subStatusTotal.length; j++) {
-            let subOpName = subStatusTotal[j].type.get("jp")
+            let subOpName = subStatusTotal[j].fightPropName.get("jp")
             let subOpValue = subStatusTotal[j].isPercent ?
                              commaSplittedNumber(subStatusTotal[j].getFormattedValue(), 1) :
                              commaSplittedNumber(subStatusTotal[j].getFormattedValue(), 0)
