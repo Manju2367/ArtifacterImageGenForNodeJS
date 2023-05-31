@@ -6,7 +6,7 @@
   "scripts": {
     "test": "node test.js",
     "start": "node main.js",
-    "dl": "node downloadNewAssets.js"
+    "dl": "npm update enka-network-api && node downloadNewAssets.js"
   },
   "repository": {
     "type": "git",

@@ -1,5 +1,10 @@
 node_modules
 test
 
+# assets
+artifact
+character
+weapon
+
 test.*
 TODO.*
