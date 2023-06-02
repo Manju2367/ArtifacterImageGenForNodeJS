@@ -4,7 +4,7 @@
   "description": "Genshin Artifact Image Generater for NodeJS",
   "main": "main.js",
   "scripts": {
-    "test": "node test.js",
+    "test": "node test/test.js",
     "start": "node main.js",
     "dl": "npm update enka-network-api && node downloadNewAssets.js"
   },
