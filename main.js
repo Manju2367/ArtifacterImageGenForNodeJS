@@ -128,6 +128,8 @@ const scoreRank = {
  * @returns {Number} 
  */
 const calcScore = (artifact, type="atk") => {
+    if(artifact === null) return 0
+
     let score = 0
     artifact.substats.total.forEach(stat => {
         let value = Math.floor(stat.getFormattedValue() * 10) / 10
@@ -275,7 +277,20 @@ const generate = async (character, calcType="atk") => {
                                       undefined
 
     // 聖遺物
-    const artifacts                 = character.artifacts
+    const artifacts                 = [null, null, null, null, null]
+    character.artifacts.forEach(artifact => {
+        if(artifact.artifactData.equipType === "EQUIP_BRACER") {
+            artifacts[0] = artifact
+        } else if(artifact.artifactData.equipType === "EQUIP_NECKLACE") {
+            artifacts[1] = artifact
+        } else if(artifact.artifactData.equipType === "EQUIP_SHOES") {
+            artifacts[2] = artifact
+        } else if(artifact.artifactData.equipType === "EQUIP_RING") {
+            artifacts[3] = artifact
+        } else if(artifact.artifactData.equipType === "EQUIP_DRESS") {
+            artifacts[4] = artifact
+        }
+    })
     const scoreFlower               = calcScore(artifacts[0], calcType)
     const scoreWing                 = calcScore(artifacts[1], calcType)
     const scoreClock                = calcScore(artifacts[2], calcType)
@@ -642,6 +657,8 @@ const generate = async (character, calcType="atk") => {
     let artifactPreviewPaste = createImage(baseSize.width, baseSize.height)
     let artifactStatusPaste = createImage(baseSize.width, baseSize.height)
     for(let i = 0; i < artifacts.length; i++) {
+        if(artifacts[i] === null) continue
+
         let artifactMask = sharp(path.join(assetsPath, "ArtifactMask.png"))
             .resize(332, 332)
         let artifactImage = sharp(path.join(artifactPath, artifacts[i].artifactData.set.name.get("jp"), `${ artifactTypeMap[artifacts[i].artifactData.equipType] }.png`))
@@ -812,9 +829,11 @@ const generate = async (character, calcType="atk") => {
 
     let artifactSet = {}
     artifacts.forEach(a => {
-        artifactSet[a.artifactData.set.name.get("jp")] === undefined ? 
-        artifactSet[a.artifactData.set.name.get("jp")] = 1 : 
-        artifactSet[a.artifactData.set.name.get("jp")]++
+        if(a !== null) {
+            artifactSet[a.artifactData.set.name.get("jp")] === undefined ? 
+            artifactSet[a.artifactData.set.name.get("jp")] = 1 : 
+            artifactSet[a.artifactData.set.name.get("jp")]++
+        }
     })
     let setCount = Object.keys(artifactSet).filter(set => artifactSet[set] >= 2)
     let setBonusPaste = createImage(baseSize.width, baseSize.height)
