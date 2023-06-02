@@ -185,7 +185,7 @@ const generate = async (character, calcType="atk") => {
     const characterName             = character.characterData.name.get("jp") === "旅人" ?
                                       (character.characterData.gender === "MALE" ? `空(${ characterElement })` : `蛍(${ characterElement })`) :
                                       character.characterData.name.get("jp")
-    const characterStatus           = character.status
+    const characterStatus           = character.stats
     const characterMaxHealth        = Math.round(characterStatus.maxHealth.getFormattedValue()).toLocaleString()
     const characterBaseHealth       = Math.round(characterStatus.healthBase.getFormattedValue()).toLocaleString()
     const characterAddHealth        = (Math.round(characterStatus.maxHealth.getFormattedValue()) - Math.round(characterStatus.healthBase.getFormattedValue())).toLocaleString()
