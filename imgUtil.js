@@ -164,8 +164,8 @@ const mask = (image, maskImage, options={
                 }]).grayscale().raw().toBuffer()
             
                 data.forEach((d, i) => {
-                    if(i % 4 === 3) {
-                        data[i] *= paste[(i + 1)/4] / 0xFF
+                    if((i - 3) % 4 === 0) {
+                        data[i] *= paste[(i - 3)/4] / 0xFF
                     }
                 })
 

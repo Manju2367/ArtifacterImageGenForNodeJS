@@ -132,7 +132,7 @@ const calcScore = (artifact, type="atk") => {
 
     let score = 0
     artifact.substats.total.forEach(stat => {
-        let value = Math.floor(stat.getFormattedValue() * 10) / 10
+        let value = Math.floor(stat.getMultipliedValue() * 10) / 10
 
         // 会心率
         if(fightProp[stat.fightProp] === "会心率") {
@@ -188,54 +188,54 @@ const generate = async (character, calcType="atk") => {
                                       (character.characterData.gender === "MALE" ? `空(${ characterElement })` : `蛍(${ characterElement })`) :
                                       character.characterData.name.get("jp")
     const characterStatus           = character.stats
-    const characterMaxHealth        = Math.round(characterStatus.maxHealth.getFormattedValue()).toLocaleString()
-    const characterBaseHealth       = Math.round(characterStatus.healthBase.getFormattedValue()).toLocaleString()
-    const characterAddHealth        = (Math.round(characterStatus.maxHealth.getFormattedValue()) - Math.round(characterStatus.healthBase.getFormattedValue())).toLocaleString()
-    const characterAttack           = Math.round(characterStatus.attack.getFormattedValue()).toLocaleString()
-    const characterBaseAttack       = Math.round(characterStatus.attackBase.getFormattedValue()).toLocaleString()
-    const characterAddAttack        = (Math.round(characterStatus.attack.getFormattedValue()) - Math.round(characterStatus.attackBase.getFormattedValue())).toLocaleString()
-    const characterDefense          = Math.round(characterStatus.defense.getFormattedValue()).toLocaleString()
-    const characterBaseDefense      = Math.round(characterStatus.defenseBase.getFormattedValue()).toLocaleString()
-    const characterAddDefense       = (Math.round(characterStatus.defense.getFormattedValue()) - Math.round(characterStatus.defenseBase.getFormattedValue())).toLocaleString()
-    const characterElementMastery   = Math.round(characterStatus.elementMastery.getFormattedValue()).toLocaleString()
-    const characterCritRate         = characterStatus.critRate.getFormattedValue().toFixed(1)
-    const characterCritDamage       = characterStatus.critDamage.getFormattedValue().toFixed(1)
-    const characterChargeEfficiency = characterStatus.chargeEfficiency.getFormattedValue().toFixed(1)
+    const characterMaxHealth        = Math.round(characterStatus.maxHealth.getMultipliedValue()).toLocaleString()
+    const characterBaseHealth       = Math.round(characterStatus.healthBase.getMultipliedValue()).toLocaleString()
+    const characterAddHealth        = (Math.round(characterStatus.maxHealth.getMultipliedValue()) - Math.round(characterStatus.healthBase.getMultipliedValue())).toLocaleString()
+    const characterAttack           = Math.round(characterStatus.attack.getMultipliedValue()).toLocaleString()
+    const characterBaseAttack       = Math.round(characterStatus.attackBase.getMultipliedValue()).toLocaleString()
+    const characterAddAttack        = (Math.round(characterStatus.attack.getMultipliedValue()) - Math.round(characterStatus.attackBase.getMultipliedValue())).toLocaleString()
+    const characterDefense          = Math.round(characterStatus.defense.getMultipliedValue()).toLocaleString()
+    const characterBaseDefense      = Math.round(characterStatus.defenseBase.getMultipliedValue()).toLocaleString()
+    const characterAddDefense       = (Math.round(characterStatus.defense.getMultipliedValue()) - Math.round(characterStatus.defenseBase.getMultipliedValue())).toLocaleString()
+    const characterElementMastery   = Math.round(characterStatus.elementMastery.getMultipliedValue()).toLocaleString()
+    const characterCritRate         = characterStatus.critRate.getMultipliedValue().toFixed(1)
+    const characterCritDamage       = characterStatus.critDamage.getMultipliedValue().toFixed(1)
+    const characterChargeEfficiency = characterStatus.chargeEfficiency.getMultipliedValue().toFixed(1)
     const characterPyroDamage       = {
         name: characterStatus.pyroDamage.fightPropName.get("jp"),
-        value: Math.round(characterStatus.pyroDamage.getFormattedValue() * 10) / 10
+        value: Math.round(characterStatus.pyroDamage.getMultipliedValue() * 10) / 10
     }
     const characterHydroDamage      = {
         name: characterStatus.hydroDamage.fightPropName.get("jp"),
-        value: Math.round(characterStatus.hydroDamage.getFormattedValue() * 10) / 10
+        value: Math.round(characterStatus.hydroDamage.getMultipliedValue() * 10) / 10
     }
     const characterCryoDamage       = {
         name: characterStatus.cryoDamage.fightPropName.get("jp"),
-        value: Math.round(characterStatus.cryoDamage.getFormattedValue() * 10) / 10
+        value: Math.round(characterStatus.cryoDamage.getMultipliedValue() * 10) / 10
     }
     const characterElectroDamage    = {
         name: characterStatus.electroDamage.fightPropName.get("jp"),
-        value: Math.round(characterStatus.electroDamage.getFormattedValue() * 10) / 10
+        value: Math.round(characterStatus.electroDamage.getMultipliedValue() * 10) / 10
     }
     const characterDendroDamage     = {
         name: characterStatus.dendroDamage.fightPropName.get("jp"),
-        value: Math.round(characterStatus.dendroDamage.getFormattedValue() * 10) / 10
+        value: Math.round(characterStatus.dendroDamage.getMultipliedValue() * 10) / 10
     }
     const characterAnemoDamage      = {
         name: characterStatus.anemoDamage.fightPropName.get("jp"),
-        value: Math.round(characterStatus.anemoDamage.getFormattedValue() * 10) / 10
+        value: Math.round(characterStatus.anemoDamage.getMultipliedValue() * 10) / 10
     }
     const characterGeoDamage        = {
         name: characterStatus.geoDamage.fightPropName.get("jp"),
-        value: Math.round(characterStatus.geoDamage.getFormattedValue() * 10) / 10
+        value: Math.round(characterStatus.geoDamage.getMultipliedValue() * 10) / 10
     }
     const characterPhysicalDamage   = {
         name: characterStatus.physicalDamage.fightPropName.get("jp"),
-        value: Math.round(characterStatus.physicalDamage.getFormattedValue() * 10) / 10
+        value: Math.round(characterStatus.physicalDamage.getMultipliedValue() * 10) / 10
     }
     const characterHealAdd          = {
         name: characterStatus.healAdd.fightPropName.get("jp"),
-        value: Math.round(characterStatus.healAdd.getFormattedValue() * 10) / 10
+        value: Math.round(characterStatus.healAdd.getMultipliedValue() * 10) / 10
     }
     const characterMaxValueStatus   = [
         characterPyroDamage, 
@@ -263,20 +263,21 @@ const generate = async (character, calcType="atk") => {
     const weaponLevel               = weapon.level
     const weaponRank                = weapon.refinementRank
     const weaponRarelity            = weapon.weaponData.stars
-    const weaponBaseAtk             = weapon.weaponStats[0].value
+    const weaponBaseAtk             = weapon.weaponStats[0].getMultipliedValue()
     const weaponSubStatusName       = weapon.weaponStats[1] ?
                                       weapon.weaponStats[1].fightPropName.get("jp") :
                                       undefined
     const weaponSubStatusValue      = weapon.weaponStats[1] ?
                                       weapon.weaponStats[1].isPercent ?
-                                      weapon.weaponStats[1].getFormattedValue().toFixed(1) :
-                                      weapon.weaponStats[1].getFormattedValue().toFixed() :
+                                      weapon.weaponStats[1].getMultipliedValue().toFixed(1) :
+                                      weapon.weaponStats[1].getMultipliedValue().toFixed() :
                                       undefined
     const weaponSubStatusType       = weapon.weaponStats[1] ?
                                       weapon.weaponStats[1].fightPropName.get("jp") :
                                       undefined
 
     // 聖遺物
+    /** @type {Array<null|Artifact>} */
     const artifacts                 = [null, null, null, null, null]
     character.artifacts.forEach(artifact => {
         if(artifact.artifactData.equipType === "EQUIP_BRACER") {
@@ -681,8 +682,8 @@ const generate = async (character, calcType="atk") => {
         let mainStatus = artifacts[i].mainstat
         let mainOpName = mainStatus.fightPropName.get("jp")
         let mainOpValue = mainStatus.isPercent ? 
-                          commaSplittedNumber(mainStatus.getFormattedValue(), 1) :
-                          commaSplittedNumber(mainStatus.getFormattedValue(), 0)
+                          commaSplittedNumber(mainStatus.getMultipliedValue(), 1) :
+                          commaSplittedNumber(mainStatus.getMultipliedValue(), 0)
 
         let mainOpIcon = sharp(path.join(emotePath, `${ Object.keys(statusNameMap).includes(mainOpName) && mainStatus.isPercent ? statusNameMap[mainOpName].long : mainOpName }.png`))
             .resize(35, 35)
@@ -730,24 +731,24 @@ const generate = async (character, calcType="atk") => {
         let subStatusSplit = artifacts[i].substats.split
         let subStatusGrowth = {}
         subStatusSplit.forEach(growth => {
-            if(!subStatusGrowth[growth.fightPropName.get("jp")]) {
-                subStatusGrowth[growth.fightPropName.get("jp")] = []
+            if(!subStatusGrowth[fightProp[growth.fightProp]]) {
+                subStatusGrowth[fightProp[growth.fightProp]] = []
             }
-            subStatusGrowth[growth.fightPropName.get("jp")].push(growth.isPercent ? 
-                                                        commaSplittedNumber(growth.getFormattedValue(), 1) : 
-                                                        String(Math.round(growth.getFormattedValue())))
+            subStatusGrowth[fightProp[growth.fightProp]].push(growth.isPercent ? 
+                                                        commaSplittedNumber(growth.getMultipliedValue(), 1) : 
+                                                        String(Math.round(growth.getMultipliedValue())))
         })
         Object.keys(subStatusGrowth).forEach(type => subStatusGrowth[type] = subStatusGrowth[type].sort().join("+"))
 
         for(let j = 0; j < subStatusTotal.length; j++) {
-            let subOpName = subStatusTotal[j].fightPropName.get("jp")
+            let subOpName = fightProp[subStatusTotal[j].fightProp]
             let subOpValue = subStatusTotal[j].isPercent ?
-                             commaSplittedNumber(subStatusTotal[j].getFormattedValue(), 1) :
-                             commaSplittedNumber(subStatusTotal[j].getFormattedValue(), 0)
+                             commaSplittedNumber(subStatusTotal[j].getMultipliedValue(), 1) :
+                             commaSplittedNumber(subStatusTotal[j].getMultipliedValue(), 0)
 
             let subOpIcon = sharp(path.join(emotePath, `${ Object.keys(statusNameMap).includes(subOpName) && subStatusTotal[j].isPercent ? statusNameMap[subOpName].long : subOpName }.png`))
                 .resize(30, 30)
-            let subOpNameImage = textToImage.render(Object.keys(statusNameMap).includes(subOpName) && subStatusTotal[j].isPercent ? statusNameMap[subOpName].short : subOpName, {
+            let subOpNameImage = textToImage.render(Object.keys(statusNameMap).includes(subStatusTotal[j].fightPropName.get("jp")) && subStatusTotal[j].isPercent ? statusNameMap[subStatusTotal[j].fightPropName.get("jp")].short : subOpName, {
                 font: { size: 25 }
             }).toSharp()
             let subOpValueImage = textToImage.render(`${ subOpValue }${ subStatusTotal[j].isPercent ? "%" : "" }`, {
