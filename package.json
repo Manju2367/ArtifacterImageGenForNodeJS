@@ -22,7 +22,7 @@
     "enka-network-api": "^3.7.3",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
-    "sharp": "^0.32.1",
+    "sharp": "^0.32.5",
     "text-to-svg": "^3.1.5"
   }
 }
