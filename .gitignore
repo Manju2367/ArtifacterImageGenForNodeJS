@@ -1,4 +1,7 @@
 node_modules
+artifact
+character
+weapon
 test
 
 test.*
