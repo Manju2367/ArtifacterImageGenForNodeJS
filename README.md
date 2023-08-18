@@ -9,7 +9,14 @@ npm i aig-for-nodejs
 ```
 
 ## Usage
+アセットをダウンロードするスクリプトを実行します(多少時間がかかります)。
+数回このスクリプトを実行して、コンソールにログが流れなくなるまで実行してください。
 
+```
+node node_modules/aig-for-nodejs/downloadNewAssets.js
+```
+
+[enka-network-api](https://www.npmjs.com/package/enka-network-api)(必須)でユーザー情報をフェッチし、[sharp](https://www.npmjs.com/package/sharp)で画像を保存する例。
 ```js
 const { EnkaClient, Character } = require("enka-network-api")
 const sharp = require("sharp")
