@@ -237,51 +237,10 @@ const composite = async (image1, image2, x=0, y=0) => {
 
 
 
-const toHex = d => {
-    let e = "0" + d.toString(16).toUpperCase()
-    return e.substring(e.length - 2)
-}
-
-/**
- * 16進数のカラーコード
- * @param {Number} r 0-255
- * @param {Number} g 0-255
- * @param {Number} b 0-255
- * @returns {String}
- */
-const rgb = (r, g, b) => {
-    r = Math.floor(r < 0 ? r = 0 : r > 255 ? r = 255 : r)
-    g = Math.floor(g < 0 ? g = 0 : g > 255 ? g = 255 : g)
-    b = Math.floor(b < 0 ? b = 0 : b > 255 ? b = 255 : b)
-
-    return `#${ toHex(r) }${ toHex(g)}${ toHex(b) }`
-}
-
-/**
- * rgba
- * @param {Number} r 0-255
- * @param {Number} g 0-255
- * @param {Number} b 0-255
- * @param {Number} a 0.0-1.0
- * @returns {String}
- */
-const rgba = (r, g, b, a) => {
-    r = Math.floor(r < 0 ? r = 0 : r > 255 ? r = 255 : r)
-    g = Math.floor(g < 0 ? g = 0 : g > 255 ? g = 255 : g)
-    b = Math.floor(b < 0 ? b = 0 : b > 255 ? b = 255 : b)
-    a < 0 ? a = 0 : a > 1 ? a = 1 : a
-
-    return `rgba(${ r }, ${ g }, ${ b }, ${ a })`
-}
-
-
-
 module.exports = {
     TextToImage,
     roundedRect,
     mask,
     createImage,
-    composite,
-    rgb,
-    rgba
+    composite
 }

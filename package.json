@@ -1,12 +1,12 @@
 {
   "name": "aig-for-nodejs",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "Genshin Artifact Image Generater for NodeJS",
   "main": "main.js",
   "scripts": {
     "test": "node test/test.js",
     "start": "node main.js",
-    "dl": "node downloadNewAssets.js"
+    "aig-dl": "node downloadNewAssets.js"
   },
   "repository": {
     "type": "git",
