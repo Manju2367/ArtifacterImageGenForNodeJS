@@ -3,7 +3,7 @@
 const path = require("path")
 const { EnkaClient } = require("enka-network-api")
 const { writeFileSync, existsSync, mkdirSync } = require("fs")
-const request = require("request-promise")
+const axios = require("axios")
 
 const apiBaseUrl = new URL("https://enka.network/ui")
 const enka = new EnkaClient({
@@ -36,6 +36,21 @@ const URLBlackList = [
     "https://api.ambr.top/assets/UI/UI_EquipIcon_Bow_Hardwood.png"
 ]
 
+
+
+
+const downloadFile = async (url, filepath) => {
+    return new Promise((resolve, reject) => {
+        axios.get(url, {
+            responseType: "arraybuffer"
+        }).then(res => {
+            writeFileSync(filepath, Buffer.from(res.data), "binary")
+            resolve()
+        }).catch(err => {
+            reject(err)
+        })
+    })
+}
 
 
 
@@ -74,12 +89,8 @@ enka.getAllCharacters().forEach((character, c) => {
                     const filename = path.join(dest, `constellations${ i + 1 }.png`)
                     // ファイルが存在する？
                     if(!existsSync(filename) && !URLBlackList.includes(con)) {
-                        console.log(`Downloading ${ con }`)
-                        request(con, {
-                            method: "GET",
-                            encoding: null
-                        }).then(res => {
-                            writeFileSync(filename, res, "binary")
+                        downloadFile(con, filename).then(() => {
+                            console.log(`Downloaded ${ con }`)
                         }).catch(err => {
                             console.log(`Failed request file ${ con }.`)
                         })
@@ -88,12 +99,8 @@ enka.getAllCharacters().forEach((character, c) => {
             } else {
                 const filename = path.join(dest, `${ key }.png`)
                 if(!existsSync(filename) && !URLBlackList.includes(targetUrl[key])) {
-                    console.log(`Downloading ${ targetUrl[key] }`)
-                    request(targetUrl[key], {
-                        method: "GET",
-                        encoding: null
-                    }).then(res => {
-                        writeFileSync(filename, res, "binary")
+                    downloadFile(targetUrl[key], filename).then(() => {
+                        console.log(`Downloaded ${ targetUrl[key] }`)
                     }).catch(err => {
                         console.log(`Failed request file ${ targetUrl[key] }.`)
                     })
@@ -118,12 +125,8 @@ enka.getAllCostumes().forEach(cos => {
         if(!existsSync(destCharName)) mkdirSync(destCharName)
         if(!existsSync(destCostume)) mkdirSync(destCostume)
         if(!existsSync(filename) && !URLBlackList.includes(imageUrl)) {
-            console.log(`Downloading ${ imageUrl }`)
-            request(imageUrl, {
-                method: "GET",
-                encoding: null
-            }).then(res => {
-                writeFileSync(filename, res, "binary")
+            downloadFile(imageUrl, filename).then(() => {
+                console.log(`Downloaded ${ imageUrl }`)
             }).catch(err => {
                 console.log(`Failed request file ${ imageUrl }.`)
             })
@@ -139,12 +142,8 @@ enka.getAllWeapons().forEach(weapon => {
     let filename = path.join(destWeapon, `${ name }.png`)
 
     if(!existsSync(filename) && !URLBlackList.includes(imageUrl)) {
-        console.log(`Downloading ${ imageUrl }`)
-        request(imageUrl, {
-            method: "GET",
-            encoding: null
-        }).then(res => {
-            writeFileSync(filename, res, "binary")
+        downloadFile(imageUrl, filename).then(() => {
+            console.log(`Downloaded ${ imageUrl }`)
         }).catch(err => {
             console.log(`Failed request file ${ imageUrl }.`)
         })
@@ -162,12 +161,8 @@ enka.getAllArtifacts().forEach(artifact => {
     if(!existsSync(dest)) mkdirSync(dest)
     // 画像が存在しない場合
     if(!existsSync(filename) && !URLBlackList.includes(imageUrl)) {
-        console.log(`Downloading ${ imageUrl } ...`)
-        request(imageUrl, {
-            method: "GET",
-            encoding: null
-        }).then(res => {
-            writeFileSync(filename, res, "binary")
+        downloadFile(imageUrl, filename).then(() => {
+            console.log(`Downloaded ${ imageUrl }`)
         }).catch(err => {
             console.log(`Failed request file ${ imageUrl }.`)
         })
