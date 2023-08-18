@@ -263,7 +263,7 @@ const generate = async (character, calcType="atk") => {
     const weaponLevel               = weapon.level
     const weaponRank                = weapon.refinementRank
     const weaponRarelity            = weapon.weaponData.stars
-    const weaponBaseAtk             = weapon.weaponStats[0].getMultipliedValue()
+    const weaponBaseAtk             = weapon.weaponStats[0].getMultipliedValue().toFixed()
     const weaponSubStatusName       = weapon.weaponStats[1] ?
                                       weapon.weaponStats[1].fightPropName.get("jp") :
                                       undefined
